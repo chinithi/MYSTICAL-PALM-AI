@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="author" content="ちんいち / Mystical Palm AI Reader" />
+  <meta name="copyright" content="© 2026 Mystical Palm AI Reader / Created by ちんいち All Rights Reserved." />
+  <title>Mystical Palm AI Reader | 拡張型・AI手相占い</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2canvas CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Shippori+Mincho:wght@500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans JP"', 'sans-serif'],
+            serif: ['"Shippori Mincho"', 'serif'],
+            display: ['"Cinzel"', 'serif'],
+          },
+          colors: {
+            mystic: {
+              950: '#07060e',
+              900: '#0f0c1d',
+              800: '#1a1533',
+              700: '#28204d',
+              gold: '#e5c158',
+              goldLight: '#f8e49b',
+              accent: '#8b5cf6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e1638 0%, #090712 65%, #05040a 100%);
+      color: #f3f0ff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* スキャンレーザーアニメーション */
+    @keyframes scanLaser {
+      0% { top: 4%; opacity: 0.2; }
+      15% { opacity: 1; }
+      50% { top: 92%; opacity: 1; }
+      85% { opacity: 1; }
+      100% { top: 4%; opacity: 0.2; }
+    }
+    .scan-laser-line {
+      position: absolute;
+      left: 4%;
+      right: 4%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #38bdf8, #e5c158, #c084fc, transparent);
+      box-shadow: 0 0 18px 4px rgba(229, 193, 88, 0.75), 0 0 32px 8px rgba(139, 92, 246, 0.55);
+      animation: scanLaser 2.6s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    @keyframes pulseRing {
+      0% { transform: scale(0.95); opacity: 0.65; }
+      50% { transform: scale(1.03); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.65; }
+    }
+    .pulse-ring {
+      animation: pulseRing 3s ease-in-out infinite;
+    }
+
+    .gold-border-glow {
+      border: 1px solid rgba(229, 193, 88, 0.35);
+      box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.25), inset 0 0 15px -8px rgba(229, 193, 88, 0.2);
+    }
+
+    .glass-panel {
+      background: rgba(20, 16, 38, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090712; }
+    ::-webkit-scrollbar-thumb { background: #3b2d66; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #e5c158; }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-amber-500/30 selection:text-amber-200 flex flex-col min-h-screen">
+
+  <!-- 背景の装飾パーティクル -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0 opacity-40">
+    <div class="absolute -top-28 -left-28 w-96 h-96 bg-purple-700/20 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-28 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 left-1/4 w-80 h-80 bg-indigo-600/15 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- ヘッダー -->
+  <header class="sticky top-0 z-30 glass-panel border-b border-amber-500/20">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-purple-600/30 border border-amber-400/50 flex items-center justify-center shadow-inner">
+          <span class="text-xl" aria-hidden="true">🖐️</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-base sm:text-lg font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-purple-300">
+              MYSTICAL PALM AI
+            </h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-300 border border-amber-400/30">
+              © 2026 Mystical Palm AI Reader
+            </span>
+          </div>
+          <p class="text-[11px] text-purple-200/70">拡張プラグイン対応・パーソナライズAI手相鑑定</p>
+        </div>
+      </div>
+
+      <!-- 右側アクションボタン（プラグイン管理） -->
+      <div class="flex items-center gap-2">
+        <button id="openPluginModalBtn" type="button"
+          class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-900/80 to-indigo-900/80 hover:from-purple-800 hover:to-indigo-800 border border-amber-400/40 text-xs font-medium text-amber-200 transition shadow-lg shadow-purple-950/50">
+          <span>🧩</span>
+          <span>プラグイン作成・管理</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 py-6 space-y-6">
+
+    <!-- 上段：STEP 1 (手のひら画像) ＆ STEP 2 (チェックボタン切替式パーソナライズ) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- 左カラム：STEP 1 手のひら画像・カメラ・スキャン演出 (7 cols) -->
+      <section class="lg:col-span-7 glass-panel gold-border-glow rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between border-b border-purple-500/20 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-400">📸</span>
+            <h2 class="font-serif font-bold text-base sm:text-lg text-amber-100">STEP 1: 手のひら画像の取り込み</h2>
+          </div>
+          <span id="imageSourceStatus" class="text-xs px-2.5 py-1 rounded-full bg-purple-900/60 text-purple-200 border border-purple-500/30">
+            未選択
+          </span>
+        </div>
+
+        <!-- プレビュー＆スキャンキャンバス領域 -->
+        <div id="stageContainer" class="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-2xl bg-mystic-950 border border-amber-500/30 overflow-hidden flex items-center justify-center select-none">
+
+          <!-- 初期プレースホルダー -->
+          <div id="emptyStagePlaceholder" class="text-center p-6 space-y-3 max-w-sm">
+            <div class="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border border-amber-400/30 flex items-center justify-center text-3xl pulse-ring">
+              🤚
+            </div>
+            <p class="font-serif text-sm sm:text-base text-amber-100">手のひらを撮影、または写真をアップロード</p>
+            <p class="text-xs text-purple-300/70 leading-relaxed">
+              明るい場所で手のひら全体が映るように撮影してください。すぐに試したい方は下の「サンプル手相を生成」も利用できます。
+            </p>
+          </div>
+
+          <!-- カメラライブ映像 -->
+          <video id="cameraVideo" playsinline autoplay muted class="hidden w-full h-full object-cover"></video>
+
+          <!-- カメラ用ガイド枠 -->
+          <div id="cameraGuideOverlay" class="hidden absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+            <div class="w-48 h-60 sm:w-56 sm:h-68 border-2 border-dashed border-amber-400/70 rounded-[40%] flex items-center justify-center shadow-[0_0_30px_rgba(229,193,88,0.25)]">
+              <span class="text-xs text-amber-200/80 bg-black/50 px-2.5 py-1 rounded-full">手のひらを枠に合わせてください</span>
+            </div>
+          </div>
+
+          <!-- 取り込み済み・解析用Canvas -->
+          <canvas id="palmCanvas" class="hidden w-full h-full object-contain bg-mystic-950"></canvas>
+
+          <!-- AI解析用オーバーレイCanvas（手相ライン・キーポイント描画） -->
+          <canvas id="overlayCanvas" class="hidden absolute inset-0 w-full h-full object-contain pointer-events-none z-10"></canvas>
+
+          <!-- スキャン中レーザー＆ステータスオーバーレイ -->
+          <div id="scanAnimationOverlay" class="hidden absolute inset-0 bg-indigo-950/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-between p-5">
+            <div class="scan-laser-line"></div>
+            <div class="w-full flex justify-between items-center text-[11px] font-mono text-amber-300/90">
+              <span>BIOMETRIC PALM SCANNER v4.5</span>
+              <span id="scanPercentText">0%</span>
+            </div>
+            <div class="my-auto text-center space-y-2 bg-mystic-950/85 px-5 py-3.5 rounded-2xl border border-amber-400/40 shadow-2xl">
+              <div class="inline-block w-7 h-7 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+              <p id="scanStepLabel" class="text-xs sm:text-sm font-medium text-amber-100">主要線（生命線・知能線・感情線）を抽出中...</p>
+              <p id="scanPluginSubLabel" class="text-[11px] text-purple-300">プラグインモジュール同期中...</p>
+            </div>
+            <div class="w-full bg-purple-950/90 h-2 rounded-full overflow-hidden border border-amber-500/30">
+              <div id="scanProgressBar" class="bg-gradient-to-r from-amber-400 via-purple-400 to-sky-400 h-full w-0 transition-all duration-150"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- カメラ起動中コントロールバー -->
+        <div id="cameraActiveControls" class="hidden flex flex-wrap items-center justify-center gap-3 pt-1">
+          <button id="capturePhotoBtn" type="button"
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-mystic-950 font-bold text-xs sm:text-sm shadow-lg flex items-center gap-1.5 hover:brightness-110 transition">
+            <span>⭕</span><span>この瞬間を撮影する</span>
+          </button>
+          <button id="switchCameraBtn" type="button"
+            class="px-3.5 py-2.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-100 border border-purple-400/30 text-xs flex items-center gap-1.5 transition">
+            <span>🔄</span><span>カメラ切替</span>
+          </button>
+          <button id="closeCameraBtn" type="button"
+            class="px-3.5 py-2.5 rounded-xl bg-rose-950/70 hover:bg-rose-900 text-rose-200 border border-rose-400/30 text-xs transition">
+            キャンセル
+          </button>
+        </div>
+
+        <!-- 画像入力ボタングループ -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <!-- ファイルアップロード -->
+          <label class="cursor-pointer flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl bg-purple-900/50 hover:bg-purple-800/60 border border-purple-400/30 text-xs sm:text-sm font-medium text-purple-100 transition text-center">
+            <span>📁</span>
+            <span>写真をアップロード</span>
+            <input id="palmFileInput" type="file" accept="image/*" class="hidden" />
+          </label>
+
+          <!-- スマホ・Webカメラ起動 -->
+          <button id="startCameraBtn" type="button"
+            class="flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl bg-indigo-900/50 hover:bg-indigo-800/60 border border-indigo-400/30 text-xs sm:text-sm font-medium text-indigo-100 transition">
+            <span>📷</span>
+            <span>カメラで撮影</span>
+          </button>
+
+          <!-- デモ用合成手相ジェネレーター -->
+          <button id="generateSamplePalmBtn" type="button"
+            class="flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/35 text-xs sm:text-sm font-medium text-amber-200 transition">
+            <span>🪄</span>
+            <span>サンプル手相を生成</span>
+          </button>
+        </div>
+
+        <!-- 利き手・鑑定対象の手の選択 -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-purple-500/20 text-xs">
+          <span class="text-purple-200/80">鑑定する手のひら：</span>
+          <div class="flex gap-2">
+            <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
+              <input type="radio" name="palmHandSide" value="right" checked class="accent-amber-400" />
+              <span>右手（後天運・現在の姿）</span>
+            </label>
+            <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
+              <input type="radio" name="palmHandSide" value="left" class="accent-amber-400" />
+              <span>左手（先天運・潜在意識）</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右カラム：STEP 2 チェックボタン切替式パーソナライズ情報 (5 cols) -->
+      <section class="lg:col-span-5 glass-panel gold-border-glow rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between border-b border-purple-500/20 pb-3 gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-amber-400">🔮</span>
+              <h2 class="font-serif font-bold text-base sm:text-lg text-amber-100">STEP 2: パーソナライズ設定</h2>
+            </div>
+
+            <!-- STEP 2 全体のON/OFFチェックボタン -->
+            <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-mystic-950 border border-amber-400/40 hover:border-amber-400 transition select-none">
+              <input id="enablePersonalizeMasterChk" type="checkbox" checked class="w-4 h-4 accent-amber-400 rounded cursor-pointer" />
+              <span id="personalizeMasterLabel" class="text-xs font-bold text-amber-300">パーソナル反映: ON</span>
+            </label>
+          </div>
+
+          <!-- パーソナライズOFF時の案内表示 -->
+          <div id="personalizeDisabledNotice" class="hidden rounded-2xl bg-mystic-950/80 border border-purple-500/30 p-5 text-center space-y-2">
+            <div class="text-2xl">🖐️✨</div>
+            <p class="text-xs sm:text-sm font-bold text-amber-200">純粋手相スキャンモード（パーソナル情報OFF）</p>
+            <p class="text-xs text-purple-300/80 leading-relaxed">
+              生年月日や経歴・お悩みを使用せず、手のひら画像の線・丘の特徴量のみから純粋に鑑定を行います。<br>
+              上の「パーソナル反映」チェックを入れると、いつでも入力欄を再表示できます。
+            </p>
+          </div>
+
+          <!-- パーソナライズON時の入力フォーム群（項目ごとにもチェックボタンでON/OFF可能） -->
+          <div id="personalizeFieldsWrapper" class="space-y-3.5 transition-all">
+            <p class="text-[11px] text-purple-200/75">
+              各項目横のチェックボタンで、鑑定に反映させたい項目だけを自由に選べます。
+            </p>
+
+            <!-- 1. お名前・ニックネーム -->
+            <div class="p-3 rounded-xl bg-mystic-950/60 border border-purple-500/25 space-y-1.5">
+              <label class="cursor-pointer flex items-center justify-between text-xs font-medium text-amber-200">
+                <span class="flex items-center gap-2">
+                  <input id="chkUseName" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer" />
+                  <span>お名前 / ニックネームを反映</span>
+                </span>
+                <span class="text-[10px] text-purple-300/70">結果カード宛名</span>
+              </label>
+              <input id="userNameInput" type="text" placeholder="例: 星野 雫 / ゲスト様"
+                class="w-full px-3 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-50 placeholder-purple-400/40" />
+            </div>
+
+            <!-- 2. 生年月日 -->
+            <div class="p-3 rounded-xl bg-mystic-950/60 border border-purple-500/25 space-y-1.5">
+              <label class="cursor-pointer flex items-center justify-between text-xs font-medium text-amber-200">
+                <span class="flex items-center gap-2">
+                  <input id="chkUseBirthDate" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer" />
+                  <span>生年月日を反映（数秘術＆流年法）</span>
+                </span>
+                <span class="text-[10px] text-purple-300/70">ライフパス算出</span>
+              </label>
+              <input id="birthDateInput" type="date"
+                class="w-full px-3 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-50" />
+            </div>
+
+            <!-- 3. これまでの経歴・歩み -->
+            <div class="p-3 rounded-xl bg-mystic-950/60 border border-purple-500/25 space-y-1.5">
+              <label class="cursor-pointer flex items-center justify-between text-xs font-medium text-amber-200">
+                <span class="flex items-center gap-2">
+                  <input id="chkUseHistory" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer" />
+                  <span>これまでの経歴・歩みを反映</span>
+                </span>
+                <span class="text-[10px] text-purple-300/70">運命線・知能線連動</span>
+              </label>
+              <textarea id="userHistoryInput" rows="2"
+                placeholder="例: デザイナーとして5年勤務後、独立を目指して準備中。保護猫と暮らしている。"
+                class="w-full px-3 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 focus:border-amber-400 focus:outline-none text-xs text-amber-50 placeholder-purple-400/40 resize-none"></textarea>
+            </div>
+
+            <!-- 4. 現在の悩み・占いたいテーマ -->
+            <div class="p-3 rounded-xl bg-mystic-950/60 border border-purple-500/25 space-y-1.5">
+              <label class="cursor-pointer flex items-center justify-between text-xs font-medium text-amber-200">
+                <span class="flex items-center gap-2">
+                  <input id="chkUseConcern" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer" />
+                  <span>現在の悩み・占いたいテーマを反映</span>
+                </span>
+                <span class="text-[10px] text-purple-300/70">プラグイン共鳴判定</span>
+              </label>
+              <textarea id="userConcernInput" rows="2"
+                placeholder="例: 来年の転職タイミングや金運の流れ、愛犬との健康運や相性を知りたい。"
+                class="w-full px-3 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 focus:border-amber-400 focus:outline-none text-xs text-amber-50 placeholder-purple-400/40 resize-none"></textarea>
+            </div>
+
+            <!-- クイックプリセット入力ボタン -->
+            <div class="pt-1">
+              <span class="block text-[11px] text-purple-300/70 mb-1.5">💡 ワンクリック相談サンプル入力：</span>
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" data-sample="pet" class="sample-fill-btn text-[11px] px-2.5 py-1 rounded-lg bg-purple-900/50 hover:bg-purple-800/70 text-purple-200 border border-purple-500/30 transition">
+                  🐾 ペットとの絆・健康
+                </button>
+                <button type="button" data-sample="wealth" class="sample-fill-btn text-[11px] px-2.5 py-1 rounded-lg bg-purple-900/50 hover:bg-purple-800/70 text-purple-200 border border-purple-500/30 transition">
+                  💰 資産形成・副業金運
+                </button>
+                <button type="button" data-sample="career" class="sample-fill-btn text-[11px] px-2.5 py-1 rounded-lg bg-purple-900/50 hover:bg-purple-800/70 text-purple-200 border border-purple-500/30 transition">
+                  🚀 独立・キャリア転機
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 下段：STEP 3 プラグインON/OFF切り替え＆鑑定実行セクション（画面下部配置） -->
+    <section class="glass-panel gold-border-glow rounded-2xl p-4 sm:p-6 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-purple-500/20 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-amber-400 text-lg">🧩</span>
+          <div>
+            <h2 class="font-serif font-bold text-base sm:text-lg text-amber-100">
+              STEP 3: 占いプラグインのON/OFF切り替え（チェックで選択）
+            </h2>
+            <p class="text-xs text-purple-200/70">
+              鑑定に組み込みたい占いジャンルにチェックを入れてください（有効数: <span id="activePluginCountBadge" class="font-bold text-amber-300">3</span>種）
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="quickEnableAllBtn" type="button"
+            class="text-xs px-3 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-100 border border-purple-400/30 transition">
+            すべてON
+          </button>
+          <button id="quickAddPluginBtn" type="button"
+            class="text-xs px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-400/40 font-medium transition flex items-center gap-1">
+            <span>＋</span><span>カスタムプラグイン作成・編集</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- プラグインON/OFFチェックボックスカード一覧（下部表示） -->
+      <div id="pluginSelectorBar" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+      <!-- AI手相鑑定スタートボタン -->
+      <div class="pt-3 border-t border-purple-500/20 flex flex-col items-center space-y-2">
+        <button id="startReadingBtn" type="button"
+          class="w-full max-w-2xl py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-mystic-950 font-serif font-bold text-base sm:text-lg shadow-[0_0_25px_rgba(229,193,88,0.4)] hover:shadow-[0_0_35px_rgba(229,193,88,0.65)] transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span>🔯</span>
+          <span>選択した設定＆プラグインでAI手相鑑定を開始する</span>
+        </button>
+        <p id="readingHintText" class="text-[11px] text-center text-purple-300/70">
+          ※手のひら写真が未選択の場合でも、自動的に神秘サンプル手相を生成して鑑定できます。
+        </p>
+      </div>
+    </section>
+
+    <!-- 4. 鑑定結果セクション（初期非表示、スキャン完了後に表示） -->
+    <section id="resultSection" class="hidden space-y-4 pt-2">
+      <!-- アクションバー -->
+      <div class="flex flex-wrap items-center justify-between gap-3 glass-panel gold-border-glow rounded-2xl px-4 py-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📜</span>
+          <div>
+            <h2 class="font-serif font-bold text-sm sm:text-base text-amber-200">AI手相＆カスタムプラグイン統合鑑定書</h2>
+            <p class="text-[11px] text-purple-300/80">上のプラグインON/OFFやパーソナルチェックを切り替えると即座に再計算されます</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="recalculatePluginsBtn" type="button"
+            class="px-3.5 py-2 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-amber-200 border border-amber-400/30 text-xs font-medium transition flex items-center gap-1.5">
+            <span>🔄</span><span>最新条件で再計算</span>
+          </button>
+          <button id="downloadResultImgBtn" type="button"
+            class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-mystic-950 font-bold text-xs sm:text-sm shadow-lg transition flex items-center gap-1.5">
+            <span>💾</span><span>鑑定結果を画像保存 (PNG)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- html2canvas キャプチャ対象カード -->
+      <div id="captureResultCard" class="rounded-3xl p-5 sm:p-8 border-2 border-amber-400/45 shadow-2xl space-y-6"
+           style="background: linear-gradient(145deg, #120e24 0%, #1d1538 50%, #0d0a1a 100%);">
+
+        <!-- カードヘッダー -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-400/30 pb-5">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-display tracking-widest uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                OFFICIAL PALM ORACLE REPORT
+              </span>
+              <span id="resultDateBadge" class="text-xs text-purple-300/80 font-mono"></span>
+            </div>
+            <h3 id="resultTitleHeading" class="font-serif text-xl sm:text-2xl font-bold text-amber-100">
+              ゲスト様の神秘手相鑑定書
+            </h3>
+            <p id="resultPersonalMeta" class="text-xs text-purple-200/80"></p>
+          </div>
+
+          <!-- 総合運勢スコアサークル -->
+          <div class="flex items-center gap-4 bg-mystic-950/80 px-4 py-3 rounded-2xl border border-amber-400/40 self-start sm:self-auto">
+            <div class="text-right">
+              <div class="text-[11px] text-amber-200/80">総合神秘波長スコア</div>
+              <div id="resultTotalRankText" class="text-xs font-bold text-purple-300">Sランク・極上吉兆</div>
+            </div>
+            <div class="flex items-baseline gap-0.5 font-display text-amber-300">
+              <span id="resultTotalScoreNum" class="text-3xl sm:text-4xl font-bold">92</span>
+              <span class="text-xs text-amber-200/70">/100</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 上段：解析済み手相サムネイル ＋ 基本四大手相線ステータス -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+          <!-- 解析済み手相ビジュアル -->
+          <div class="md:col-span-5 flex flex-col items-center">
+            <div class="relative w-full max-w-xs aspect-[4/3] rounded-2xl overflow-hidden border border-amber-400/40 bg-mystic-950 shadow-inner">
+              <img id="resultPalmSnapshot" alt="解析された手相画像" class="w-full h-full object-contain" />
+            </div>
+            <p id="resultPalmMetricSummary" class="mt-2 text-[11px] text-purple-300/80 font-mono text-center"></p>
+          </div>
+
+          <!-- 基本4大手相ライン鑑定 -->
+          <div class="md:col-span-7 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-amber-400">🖐️</span>
+              <h4 class="font-serif font-bold text-sm sm:text-base text-amber-200">四大基本手相ライン解析</h4>
+            </div>
+            <div id="coreLinesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+          </div>
+        </div>
+
+        <!-- パーソナライズ総合メッセージ（生年月日・経歴・悩み反映） -->
+        <div class="rounded-2xl bg-mystic-950/75 border border-amber-400/30 p-4 sm:p-5 space-y-2">
+          <div class="flex items-center gap-2 text-amber-300 font-serif font-bold text-sm sm:text-base">
+            <span>🌌</span>
+            <span id="narrativeSectionTitle">AIパーソナライズ深層リーディング（経歴・お悩み連動）</span>
+          </div>
+          <p id="resultPersonalizedNarrative" class="text-xs sm:text-sm text-purple-100/90 leading-relaxed whitespace-pre-line"></p>
+        </div>
+
+        <!-- プラグイン別・拡張鑑定結果カード一覧 -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-amber-400">🧩</span>
+              <h4 class="font-serif font-bold text-sm sm:text-base text-amber-200">アクティブ占いプラグイン鑑定結果</h4>
+            </div>
+            <span id="resultPluginCountLabel" class="text-xs text-purple-300/80"></span>
+          </div>
+          <div id="pluginResultsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- カード内フッター＆著作権表示（画像保存時にも鮮明に含まれる） -->
+        <div class="pt-4 border-t border-amber-400/30 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-2 text-purple-200/85">
+            <span>🔯</span>
+            <span>Mystical Palm AI Reader — Extensible Divination Engine</span>
+          </div>
+          <div class="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 font-display tracking-wider text-amber-300 font-bold text-xs">
+            © 2026 Mystical Palm AI Reader All Rights Reserved.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 5. プラグイン管理・カスタム作成モーダル -->
+  <div id="pluginModalBackdrop" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+    <div class="glass-panel gold-border-glow w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl">
+      <!-- モーダルヘッダー -->
+      <div class="px-5 py-4 border-b border-amber-400/25 flex items-center justify-between bg-mystic-950/60">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">🧩</span>
+          <div>
+            <h2 class="font-serif font-bold text-base sm:text-lg text-amber-200">占いカスタムプラグイン管理スタジオ</h2>
+            <p class="text-xs text-purple-300/75">使用する占いジャンルの切り替えや、独自の判定ルール・スコア計算を持つプラグインを作成できます</p>
+          </div>
+        </div>
+        <button id="closePluginModalBtn" type="button"
+          class="w-8 h-8 rounded-lg bg-purple-900/50 hover:bg-purple-800 text-purple-200 flex items-center justify-center text-lg">
+          ✕
+        </button>
+      </div>
+
+      <!-- モーダルタブ切り替え -->
+      <div class="flex border-b border-purple-500/25 bg-mystic-900/80 px-5 pt-2 gap-2">
+        <button type="button" data-tab="list" class="plugin-modal-tab px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-amber-400 text-amber-300">
+          📦 登録済みプラグイン一覧
+        </button>
+        <button type="button" data-tab="create" class="plugin-modal-tab px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-purple-300 hover:text-amber-200">
+          ✨ 新規カスタムプラグイン作成・編集
+        </button>
+        <button type="button" data-tab="json" class="plugin-modal-tab px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-purple-300 hover:text-amber-200">
+          🔧 JSONインポート / エクスポート
+        </button>
+      </div>
+
+      <!-- モーダルボディ -->
+      <div class="p-5 overflow-y-auto flex-1 space-y-5">
+
+        <!-- タブ1: 登録済みプラグイン一覧 -->
+        <div id="pluginTabList" class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs text-purple-200/80">
+              チェックを入れたプラグインが手相鑑定時に同時実行され、鑑定書に専用セクションが追加されます。
+            </p>
+            <div class="flex gap-2">
+              <button id="enableAllPluginsBtn" type="button" class="text-xs px-3 py-1 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-amber-200 border border-amber-400/30">
+                すべてON
+              </button>
+              <button id="resetDefaultPluginsBtn" type="button" class="text-xs px-3 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-200 border border-rose-400/30">
+                初期状態に戻す
+              </button>
+            </div>
+          </div>
+          <div id="pluginManagerCardsList" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
+        </div>
+
+        <!-- タブ2: 新規カスタムプラグイン作成フォーム -->
+        <div id="pluginTabCreate" class="hidden space-y-4">
+          <div class="rounded-xl bg-amber-500/10 border border-amber-400/30 p-3 flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs text-amber-200">💡 テンプレートから自動入力してカスタマイズすることもできます：</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" data-preset="health" class="preset-plugin-btn text-xs px-2.5 py-1 rounded-lg bg-mystic-900 hover:bg-purple-900 text-amber-200 border border-amber-400/30">
+                🌿 美容・バイタリティ占い
+              </button>
+              <button type="button" data-preset="creative" class="preset-plugin-btn text-xs px-2.5 py-1 rounded-lg bg-mystic-900 hover:bg-purple-900 text-amber-200 border border-amber-400/30">
+                🎨 推し活・クリエイティブ運
+              </button>
+              <button type="button" data-preset="pastlife" class="preset-plugin-btn text-xs px-2.5 py-1 rounded-lg bg-mystic-900 hover:bg-purple-900 text-amber-200 border border-amber-400/30">
+                ⏳ 前世・カルマ記憶占い
+              </button>
+            </div>
+          </div>
+
+          <form id="customPluginForm" class="space-y-4">
+            <input type="hidden" id="cpEditId" value="" />
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div class="sm:col-span-2">
+                <label class="block text-xs text-purple-200 mb-1">アイコン</label>
+                <input id="cpIcon" type="text" value="🌟" maxlength="4" required
+                  class="w-full px-3 py-2 text-center text-lg rounded-xl bg-mystic-950 border border-purple-500/40 text-amber-100" />
+              </div>
+              <div class="sm:col-span-6">
+                <label class="block text-xs text-purple-200 mb-1">プラグイン名（占いジャンル名）*</label>
+                <input id="cpName" type="text" placeholder="例: 推し活・ガチャ神引き特化占い" required
+                  class="w-full px-3.5 py-2 rounded-xl bg-mystic-950 border border-purple-500/40 text-sm text-amber-100" />
+              </div>
+              <div class="sm:col-span-4">
+                <label class="block text-xs text-purple-200 mb-1">テーマカラー</label>
+                <select id="cpColorTheme" class="w-full px-3 py-2 rounded-xl bg-mystic-950 border border-purple-500/40 text-sm text-amber-100">
+                  <option value="amber">✨ ゴールド (金運・王道)</option>
+                  <option value="emerald">🌿 エメラルド (癒やし・ペット・健康)</option>
+                  <option value="sky">💎 スカイブルー (知性・仕事・キャリア)</option>
+                  <option value="rose">🌸 ローズピンク (恋愛・絆・推し活)</option>
+                  <option value="violet">🔮 バイオレット (神秘・前世・霊感)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-purple-200 mb-1">プラグイン概要・説明*</label>
+              <input id="cpDescription" type="text" placeholder="例: 太陽丘の輝きと感情線の熱量から、勝負運や引き寄せの法則を判定します" required
+                class="w-full px-3.5 py-2 rounded-xl bg-mystic-950 border border-purple-500/40 text-xs sm:text-sm text-amber-100" />
+            </div>
+
+            <!-- スコア計算ロジック＆手相特徴ウェイト設定 -->
+            <div class="rounded-2xl bg-mystic-950/90 border border-purple-500/30 p-4 space-y-3">
+              <h4 class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                <span>⚙️</span><span>カスタムスコア計算ロジック＆判定ルール設定</span>
+              </h4>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-[11px] text-purple-200 mb-1">重視する手相特徴（主軸）</label>
+                  <select id="cpPrimaryFeature" class="w-full px-3 py-2 rounded-xl bg-mystic-900 border border-purple-500/40 text-xs text-amber-100">
+                    <option value="vitality">生命線・金星丘の張り（活力・愛情）</option>
+                    <option value="intellect">知能線・月丘の深さ（知略・直感）</option>
+                    <option value="emotion">感情線・木星丘の勢い（情熱・絆）</option>
+                    <option value="fortune">運命線・太陽丘の輝き（財運・成功）</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] text-purple-200 mb-1">ベーススコア補正 (50〜85)</label>
+                  <input id="cpBaseScore" type="number" min="50" max="85" value="68"
+                    class="w-full px-3 py-2 rounded-xl bg-mystic-900 border border-purple-500/40 text-xs text-amber-100" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-purple-200 mb-1">共鳴ボーナスキーワード（カンマ区切り）</label>
+                  <input id="cpKeywords" type="text" placeholder="例: ライブ, 抽選, 創作, 夢, 挑戦"
+                    class="w-full px-3 py-2 rounded-xl bg-mystic-900 border border-purple-500/40 text-xs text-amber-100" />
+                </div>
+              </div>
+
+              <!-- 独自サブ評価軸（3項目） -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                <div>
+                  <label class="block text-[11px] text-purple-300 mb-1">独自評価軸① ラベル</label>
+                  <input id="cpAxis1" type="text" value="直感シンクロ率" required
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/40 text-xs text-amber-100" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-purple-300 mb-1">独自評価軸② ラベル</label>
+                  <input id="cpAxis2" type="text" value="幸運引き寄せ力" required
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/40 text-xs text-amber-100" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-purple-300 mb-1">独自評価軸③ ラベル</label>
+                  <input id="cpAxis3" type="text" value="継続エネルギー" required
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/40 text-xs text-amber-100" />
+                </div>
+              </div>
+            </div>
+
+            <!-- スコア帯別鑑定メッセージテンプレート -->
+            <div class="space-y-2.5">
+              <label class="block text-xs font-bold text-amber-300">
+                📖 スコア帯別・鑑定メッセージ（<code class="text-amber-200">{name}</code> で名前、<code class="text-amber-200">{hand}</code> で右手/左手を自動挿入）
+              </label>
+              <div>
+                <span class="text-[11px] text-emerald-300">★ ハイスコア時（85点以上・大吉兆）のメッセージ*</span>
+                <textarea id="cpMsgHigh" rows="2" required
+                  placeholder="例: {name}様の{hand}には圧倒的な引き寄せの線が刻まれています！直感を信じて動くことで最高の奇跡が訪れます。"
+                  class="mt-1 w-full px-3 py-2 rounded-xl bg-mystic-950 border border-purple-500/40 text-xs text-amber-50"></textarea>
+              </div>
+              <div>
+                <span class="text-[11px] text-sky-300">◆ ミドルスコア時（70〜84点・好調期）のメッセージ*</span>
+                <textarea id="cpMsgMid" rows="2" required
+                  placeholder="例: {name}様の波長は安定して上昇中です。日々の小さな積み重ねがやがて大きな開花へと繋がる手相です。"
+                  class="mt-1 w-full px-3 py-2 rounded-xl bg-mystic-950 border border-purple-500/40 text-xs text-amber-50"></textarea>
+              </div>
+              <div>
+                <span class="text-[11px] text-amber-300">🌱 ケア・準備期（69点以下・充電期）のメッセージ*</span>
+                <textarea id="cpMsgLow" rows="2" required
+                  placeholder="例: 今は焦らずエネルギーを蓄える充電期です。{hand}の線を優しくマッサージすることで運気の巡りが整います。"
+                  class="mt-1 w-full px-3 py-2 rounded-xl bg-mystic-950 border border-purple-500/40 text-xs text-amber-50"></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] text-purple-200 mb-1">🍀 開運ラッキーアイテム・アクション候補（カンマ区切り）*</label>
+                <input id="cpLuckyItems" type="text" value="ゴールドの小物, 朝一番の深呼吸, 新しいノート, ハーブティー" required
+                  class="w-full px-3 py-2 rounded-xl bg-mystic-950 border border-purple-500/40 text-xs text-amber-100" />
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+              <button type="button" id="cancelEditPluginBtn" class="px-4 py-2 rounded-xl bg-purple-950 hover:bg-purple-900 text-purple-200 text-xs">
+                クリア
+              </button>
+              <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-mystic-950 font-bold text-xs sm:text-sm shadow-lg">
+                💾 カスタムプラグインを保存して有効化
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- タブ3: JSONインポート/エクスポート -->
+        <div id="pluginTabJson" class="hidden space-y-3">
+          <p class="text-xs text-purple-200/80">
+            作成したカスタムプラグイン定義をJSON形式でバックアップ・共有したり、外部プラグイン定義を一括ロードできます。
+          </p>
+          <textarea id="pluginJsonTextarea" rows="10"
+            class="w-full p-3.5 rounded-xl bg-mystic-950 border border-purple-500/40 font-mono text-xs text-amber-200"></textarea>
+          <div class="flex flex-wrap justify-between gap-2">
+            <button id="copyPluginJsonBtn" type="button" class="px-4 py-2 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-amber-200 border border-amber-400/30 text-xs">
+              📋 JSONをクリップボードにコピー
+            </button>
+            <button id="importPluginJsonBtn" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-mystic-950 font-bold text-xs">
+              📥 このJSONからプラグインを読み込む
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- フッター（著作権表示強化） -->
+  <footer class="relative z-10 border-t border-amber-500/30 bg-mystic-950/95 py-6 mt-10">
+    <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5 text-xs text-purple-200/80">
+        <span class="text-lg">🖐️</span>
+        <div>
+          <div class="font-serif font-bold text-amber-200">Mystical Palm AI Reader — 拡張型・AI手相占いWebアプリ</div>
+          <div class="text-[11px] text-purple-300/70">カスタムプラグインシステム ＆ パーソナライズ手相解析エンジン搭載</div>
+        </div>
+      </div>
+      <div class="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-400/40 text-center sm:text-right">
+        <p class="font-display font-bold tracking-wider text-xs sm:text-sm text-amber-300">
+          © 2026 Mystical Palm AI Reader
+        </p>
+        <p class="text-[10px] text-purple-300/80">
+          All Rights Reserved. 無断転載・複製を禁じます
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- アプリケーションスクリプト -->
+  <script>
+    /********************************************************************
+     * 1. デフォルト搭載・占いプラグイン定義（ペット・金運・仕事・恋愛）
+     ********************************************************************/
+    const DEFAULT_PLUGINS = [
+      {
+        id: 'pet_bond_oracle',
+        name: 'ペット・アニマル絆占い',
+        icon: '🐾',
+        colorTheme: 'emerald',
+        builtIn: true,
+        enabled: true,
+        description: '感情線の温もりと金星丘の慈愛エネルギーから、ペットとの魂のシンクロ率・健康守護・守護アニマルを鑑定します。',
+        primaryFeature: 'vitality',
+        baseScore: 74,
+        keywords: ['ペット', '犬', '猫', 'インコ', 'うさぎ', '動物', '保護', '散歩', 'うちの子', '健康'],
+        axes: ['アニマル共鳴度', '癒やし波長', '健康守護力'],
+        messages: {
+          high: '{name}様の{hand}からは、動物たちが本能的に安心感を覚える極めて温かい「慈愛のオーラ（金星丘の豊かな膨らみ）」が放たれています。現在のペットや動物とのご縁は前世からの深い魂の約束であり、あなたが笑顔で声をかけるだけでペットの生命エネルギーも一段と輝く相乗効果が生まれています。',
+          mid: '{name}様の{hand}には、優しく穏やかな共感のラインが刻まれています。言葉を超えたアイコンタクトやスキンシップの時間を1日5分でも意識的に増やすことで、ペットとの信頼関係がさらに深まり、お互いにストレスを浄化し合える素晴らしい時期です。',
+          low: '{name}様ご自身が少しお疲れ気味で、{hand}のエネルギーが内側に向かっています。動物は飼い主の心の鏡です。まずはあなた自身がゆっくり深呼吸し、自然の空気を吸ってリフレッシュすることで、ペットとの穏やかな波長がすっと整います。'
+        },
+        luckyItems: ['肉球モチーフのチャーム', '木製のブラッシングコーム', '日当たりの良い窓辺でのひなたぼっこ', '緑豊かな公園への散歩']
+      },
+      {
+        id: 'wealth_abundance_pro',
+        name: '金運・財運特化占い',
+        icon: '💰',
+        colorTheme: 'amber',
+        builtIn: true,
+        enabled: true,
+        description: '太陽丘・水星丘の隆起と財運線の透明度から、資産形成・臨時収入・自己投資のリターン期待値を専門解析します。',
+        primaryFeature: 'fortune',
+        baseScore: 71,
+        keywords: ['金運', 'お金', '投資', '貯金', '副業', '収入', '資産', '年収', '独立', 'ビジネス', '財運'],
+        axes: ['蓄財・資産形成力', 'マネー引き寄せ運', '先行投資リターン'],
+        messages: {
+          high: '{name}様の{hand}における太陽丘から水星丘にかけてのラインが非常に鮮明です！「人との信頼や専門スキルがそのまま大きな富に変わる」黄金期のサインが出ています。長期的な視点での資産運用や、自分の価値を高める自己投資が数倍の実りとなって返ってくるでしょう。',
+          mid: '{name}様の{hand}には堅実で着実な「育成型の財運線」が現れています。一攫千金を狙うよりも、固定費の見直しやスキルアップ・副業の種まきをコツコツ続けることで、半年〜1年後に驚くほど安定した経済基盤が築かれます。',
+          low: '現在の{hand}は「財の器を広げている再構築期」を示しています。衝動的な出費を控え、財布の中やデジタル明細を整理整頓することで金運の通り道がクリアになり、必要なタイミングでお金が巡る体質へと変わります。'
+        },
+        luckyItems: ['ゴールド金具のレザー小物', '新札・ピン札を1枚忍ばせる', '観葉植物（パキラ・モンステラ）', '朝のデスク整理']
+      },
+      {
+        id: 'career_vocation_master',
+        name: '仕事・キャリア特化占い',
+        icon: '🚀',
+        colorTheme: 'sky',
+        builtIn: true,
+        enabled: true,
+        description: '知能線の分岐角度と運命線の力強さから、天職適性・キャリアの転機・リーダーシップと才能開花の時期を導き出します。',
+        primaryFeature: 'intellect',
+        baseScore: 73,
+        keywords: ['仕事', '転職', 'キャリア', '独立', '起業', '昇進', 'スキル', '資格', '天職', '人間関係', '職場'],
+        axes: ['天職ブレイクスルー', '知略・クリエイティブ', 'リーダーシップ影響力'],
+        messages: {
+          high: '{name}様の{hand}には、困難を独自のアイデアで突破する力強い「二股の知能線」と真っ直ぐ伸びる運命線が共鳴しています。これまでの経験がすべて一つの線に繋がり、周囲から頼られるポジションや独立・新プロジェクトで大きく飛躍する絶好のタイミングです！',
+          mid: '{name}様の{hand}は、実務能力と周囲との調和力が高水準でバランスしています。今の環境で培ったノウハウを言語化・発信したり、新しいツールや資格に挑戦することで、思いがけない好条件のオファーや抜擢が舞い込みます。',
+          low: '{name}様の{hand}は「次のステージへ飛ぶ前の助走期間」を表しています。すべてを一人で抱え込まず、タスクの優先順位を絞って余白を作ることが鍵です。異業種の人との会話から、視界が一気に開けるヒントが得られます。'
+        },
+        luckyItems: ['万年筆・上質なボールペン', 'ネイビーまたはロイヤルブルーの名刺入れ', '朝一番のキャリアノート記入', 'ブックカフェでの読書']
+      },
+      {
+        id: 'love_soulmate_harmony',
+        name: '恋愛・ソウルメイト特化占い',
+        icon: '💖',
+        colorTheme: 'rose',
+        builtIn: true,
+        enabled: false,
+        description: '感情線のカーブと結婚線・月丘の神秘線から、運命のパートナーシップ・魅力開花・良縁引き寄せ力を占います。',
+        primaryFeature: 'emotion',
+        baseScore: 72,
+        keywords: ['恋愛', '結婚', 'パートナー', '出会い', '片思い', '復縁', '夫婦', '恋人', '相性', 'ご縁'],
+        axes: ['ソウルメイト引力', '愛されオーラ輝き', '心の絆・対話力'],
+        messages: {
+          high: '{name}様の{hand}の感情線は美しい弧を描き、人差し指と中指の間へと伸びる最高の「愛され・良縁成就相」を示しています。飾らない素直な気持ちを表現することで、魂レベルで理解し合える相手との距離が一気に縮まる幸福期です。',
+          mid: '{name}様の{hand}には誠実で温かな愛情運が宿っています。相手の言葉の裏を深く考えすぎず、「ありがとう」「嬉しい」をストレートに伝えることで、穏やかで心地よい関係性が自然と育まれます。',
+          low: 'まずは{name}様ご自身の心をたっぷり甘やかしてあげる時期です。{hand}の示す魅力は十分にありますので、好きな香りや音楽で心を満たすことで、あなた本来の輝くオーラが復活し素敵なご縁を引き寄せます。'
+        },
+        luckyItems: ['ローズクォーツのアクセサリー', '柑橘系またはフローラルの香水', '間接照明のカフェ', '手書きのメッセージカード']
+      }
+    ];
+
+    // プリセットテンプレート（新規作成フォーム用）
+    const PLUGIN_PRESETS = {
+      health: {
+        icon: '🌿',
+        name: '美容・バイタリティ特化占い',
+        colorTheme: 'emerald',
+        description: '生命線の張りツヤと健康線から、心身のデトックス周期・睡眠の質・インナービューティー運を解析します。',
+        primaryFeature: 'vitality',
+        baseScore: 72,
+        keywords: ['健康', '美容', '睡眠', 'ダイエット', '疲れ', '体調', 'ヨガ', 'サウナ', '肌'],
+        axes: ['生命チャージ力', 'インナービューティー', '自律神経バランス'],
+        msgHigh: '{name}様の{hand}の生命線は張りがあり、内側から発光するようなバイタリティに満ちています！新しい美容習慣やボディメイクを始めると驚くほど早く効果を実感できる時期です。',
+        msgMid: '{name}様の{hand}は安定したリズムを刻んでいます。質の高い睡眠と温かい飲み物を意識することで、さらに透明感と活力がアップします。',
+        msgLow: '{name}様の{hand}から「少しスマホや思考を休めて」というサインが出ています。湯船にゆっくり浸かり、デジタルデトックスの夜を作ることで一気に運気と体調が回復します。',
+        luckyItems: 'エプソムソルト入浴, 白湯・カモミールティー, シルクの枕カバー, 朝のストレッチ'
+      },
+      creative: {
+        icon: '🎨',
+        name: '推し活・クリエイティブ神引き占い',
+        colorTheme: 'rose',
+        description: '月丘の想像力ラインと太陽線の閃きから、創作インスピレーション・チケット当選・ガチャ神引き運を判定します。',
+        primaryFeature: 'emotion',
+        baseScore: 75,
+        keywords: ['推し', 'ライブ', 'チケット', '当選', 'ガチャ', 'イラスト', '創作', '音楽', 'イベント'],
+        axes: ['神引き・当選波動', '創作イマジネーション', '推し共鳴エネルギー'],
+        msgHigh: '{name}様の{hand}の月丘と太陽線が強烈にスパークしています！まさに「神引き・良席当選・名作誕生」のビッグウェーブ到来中です。直感でピンと来た日時や時間帯にエントリー・制作を行うと奇跡が起きます！',
+        msgMid: '{name}様の{hand}には楽しむ心が幸運を呼ぶラインが出ています。推しカラーを身につけたり、仲間と喜びをシェアすることでさらに引き寄せ運が加速します。',
+        msgLow: '今はインプットと徳積みの充電期間です。部屋のグッズコーナーを綺麗にディスプレイし直すことで、次の大勝負に向けた強運エネルギーが充填されます。',
+        luckyItems: '推しカラーの小物を1点持つ, 水晶のさざれ石, 午前11時11分のエントリー, お気に入りの音楽プレイリスト'
+      },
+      pastlife: {
+        icon: '⏳',
+        name: '前世・カルマ記憶スピリチュアル占い',
+        colorTheme: 'violet',
+        description: '神秘十字線と仏眼相・月丘の紋様から、魂が持つ過去世の記憶・天性のギフト・今世のミッションを紐解きます。',
+        primaryFeature: 'intellect',
+        baseScore: 73,
+        keywords: ['前世', '使命', 'スピリチュアル', '直感', '夢', '運命', '神社', '魂', '不思議な体験'],
+        axes: ['過去世ギフト覚醒度', '守護スピリット加護', '直感チャネリング力'],
+        msgHigh: '{name}様の{hand}の中央には、強い守護と天性の直感力を示す「神秘十字」の波長が刻まれています。かつて癒やし手や表現者として多くの人を導いた魂の記憶が今まさに覚醒しようとしており、不思議なシンクロニシティが次々と起こるでしょう。',
+        msgMid: '{name}様の{hand}には、困ったときに必ず助け舟が現れる「徳の高さ」が表れています。懐かしいと感じる場所や文化に触れることで、眠っていた才能の扉が開きます。',
+        msgLow: '{name}様の魂は今、古い価値観を手放して新しく生まれ変わる脱皮のタイミングにあります。自然豊かな神社や水辺を訪れることで、魂の羅針盤がクリアに整います。',
+        luckyItems: 'アメジスト・ラブラドライト, 満月・新月の夜のジャーナリング, 古社寺への参拝, 天然塩の浄化'
+      }
+    };
+
+    /********************************************************************
+     * 2. プラグインレジストリ＆状態管理システム (PluginManager)
+     ********************************************************************/
+    const STORAGE_KEY = 'mystical_palm_ai_plugins_v2';
+
+    class PalmPluginManager {
+      constructor() {
+        this.plugins = [];
+        this.load();
+      }
+
+      load() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              this.plugins = parsed;
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to load plugins from localStorage:', e);
+        }
+        this.plugins = JSON.parse(JSON.stringify(DEFAULT_PLUGINS));
+        this.save();
+      }
+
+      save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.plugins));
+        } catch (e) {
+          console.warn('Failed to save plugins:', e);
+        }
+      }
+
+      getAll() {
+        return this.plugins;
+      }
+
+      getEnabled() {
+        return this.plugins.filter(p => p.enabled);
+      }
+
+      toggle(id) {
+        const target = this.plugins.find(p => p.id === id);
+        if (target) {
+          target.enabled = !target.enabled;
+          this.save();
+        }
+      }
+
+      enableAll() {
+        this.plugins.forEach(p => { p.enabled = true; });
+        this.save();
+      }
+
+      resetDefaults() {
+        this.plugins = JSON.parse(JSON.stringify(DEFAULT_PLUGINS));
+        this.save();
+      }
+
+      upsertPlugin(pluginObj) {
+        const idx = this.plugins.findIndex(p => p.id === pluginObj.id);
+        if (idx >= 0) {
+          this.plugins[idx] = pluginObj;
+        } else {
+          this.plugins.push(pluginObj);
+        }
+        this.save();
+      }
+
+      deletePlugin(id) {
+        this.plugins = this.plugins.filter(p => p.id !== id);
+        this.save();
+      }
+
+      evaluatePlugin(plugin, palmMetrics, userContext) {
+        const featureMap = {
+          vitality: palmMetrics.vitalityScore,
+          intellect: palmMetrics.intellectScore,
+          emotion: palmMetrics.emotionScore,
+          fortune: palmMetrics.fortuneScore
+        };
+
+        const primaryVal = featureMap[plugin.primaryFeature] || 75;
+        const base = Number(plugin.baseScore) || 70;
+
+        let idHash = 0;
+        for (let i = 0; i < plugin.id.length; i++) {
+          idHash = (idHash * 31 + plugin.id.charCodeAt(i)) % 997;
+        }
+
+        // パーソナライズ有効時のみキーワード共鳴ボーナス判定
+        const combinedText = `${userContext.history || ''} ${userContext.concern || ''}`.toLowerCase();
+        const matchedKeywords = [];
+        if (userContext.personalizeEnabled && Array.isArray(plugin.keywords)) {
+          plugin.keywords.forEach(kw => {
+            const cleanKw = (kw || '').trim();
+            if (cleanKw && combinedText.includes(cleanKw.toLowerCase())) {
+              matchedKeywords.push(cleanKw);
+            }
+          });
+        }
+        const keywordBonus = Math.min(12, matchedKeywords.length * 4);
+
+        const lifePathBonus = (userContext.personalizeEnabled && userContext.lifePathNumber)
+          ? ((userContext.lifePathNumber + idHash) % 7) - 2
+          : (idHash % 5) - 2;
+
+        let rawScore = Math.round(base * 0.45 + primaryVal * 0.52 + keywordBonus + lifePathBonus);
+        const finalScore = Math.max(58, Math.min(99, rawScore));
+
+        const axes = (plugin.axes && plugin.axes.length === 3)
+          ? plugin.axes
+          : ['波長シンクロ率', '潜在エネルギー', '開花タイミング'];
+
+        const subScores = axes.map((label, idx) => {
+          const variance = ((idHash + idx * 19 + palmMetrics.seed) % 15) - 6;
+          const val = Math.max(55, Math.min(99, finalScore + variance));
+          return { label, score: val };
+        });
+
+        let template = plugin.messages.mid;
+        if (finalScore >= 85) {
+          template = plugin.messages.high;
+        } else if (finalScore < 70) {
+          template = plugin.messages.low;
+        }
+
+        const handLabel = userContext.handSide === 'left' ? '左手（先天運）' : '右手（現在・未来運）';
+        const displayName = userContext.name ? userContext.name : 'あなた';
+
+        let personalizedMessage = template
+          .replace(/\{name\}/g, displayName)
+          .replace(/\{hand\}/g, handLabel);
+
+        if (matchedKeywords.length > 0) {
+          personalizedMessage += `\n\n【✨ キーワード共鳴検出: 「${matchedKeywords.join('・')}」】\nご入力いただいたテーマとこの手相ラインが強く共鳴しています。特に向こう3ヶ月間は関連する行動が大きな幸運の引き金となります。`;
+        } else if (userContext.personalizeEnabled && userContext.concern && userContext.concern.trim().length > 0) {
+          personalizedMessage += `\n\n【🔮 お悩みへの示唆】\n気にかけているテーマについても、${handLabel}のエネルギーは「自分のペースを守ることで最良の解決策が見つかる」と告げています。`;
+        }
+
+        const items = Array.isArray(plugin.luckyItems) && plugin.luckyItems.length > 0
+          ? plugin.luckyItems
+          : ['ゴールドの小物', '深呼吸とストレッチ'];
+        const chosenLucky = items[(palmMetrics.seed + idHash) % items.length];
+
+        return {
+          pluginId: plugin.id,
+          name: plugin.name,
+          icon: plugin.icon || '🌟',
+          colorTheme: plugin.colorTheme || 'amber',
+          description: plugin.description,
+          score: finalScore,
+          subScores,
+          message: personalizedMessage,
+          luckyItem: chosenLucky,
+          matchedKeywords
+        };
+      }
+    }
+
+    const pluginManager = new PalmPluginManager();
+
+    /********************************************************************
+     * 3. DOM要素参照とアプリケーション状態
+     ********************************************************************/
+    const state = {
+      hasImage: false,
+      imageSourceType: 'none',
+      cameraStream: null,
+      facingMode: 'environment',
+      lastPalmMetrics: null,
+      sampleSeedCounter: 1
+    };
+
+    const els = {
+      pluginSelectorBar: document.getElementById('pluginSelectorBar'),
+      activePluginCountBadge: document.getElementById('activePluginCountBadge'),
+      openPluginModalBtn: document.getElementById('openPluginModalBtn'),
+      closePluginModalBtn: document.getElementById('closePluginModalBtn'),
+      quickAddPluginBtn: document.getElementById('quickAddPluginBtn'),
+      quickEnableAllBtn: document.getElementById('quickEnableAllBtn'),
+      pluginModalBackdrop: document.getElementById('pluginModalBackdrop'),
+      pluginManagerCardsList: document.getElementById('pluginManagerCardsList'),
+      enableAllPluginsBtn: document.getElementById('enableAllPluginsBtn'),
+      resetDefaultPluginsBtn: document.getElementById('resetDefaultPluginsBtn'),
+      customPluginForm: document.getElementById('customPluginForm'),
+      pluginJsonTextarea: document.getElementById('pluginJsonTextarea'),
+      copyPluginJsonBtn: document.getElementById('copyPluginJsonBtn'),
+      importPluginJsonBtn: document.getElementById('importPluginJsonBtn'),
+
+      // ステージ＆カメラ
+      emptyStagePlaceholder: document.getElementById('emptyStagePlaceholder'),
+      cameraVideo: document.getElementById('cameraVideo'),
+      cameraGuideOverlay: document.getElementById('cameraGuideOverlay'),
+      cameraActiveControls: document.getElementById('cameraActiveControls'),
+      palmCanvas: document.getElementById('palmCanvas'),
+      overlayCanvas: document.getElementById('overlayCanvas'),
+      scanAnimationOverlay: document.getElementById('scanAnimationOverlay'),
+      scanPercentText: document.getElementById('scanPercentText'),
+      scanStepLabel: document.getElementById('scanStepLabel'),
+      scanPluginSubLabel: document.getElementById('scanPluginSubLabel'),
+      scanProgressBar: document.getElementById('scanProgressBar'),
+      imageSourceStatus: document.getElementById('imageSourceStatus'),
+
+      // STEP 2 チェックボタン＆入力
+      enablePersonalizeMasterChk: document.getElementById('enablePersonalizeMasterChk'),
+      personalizeMasterLabel: document.getElementById('personalizeMasterLabel'),
+      personalizeDisabledNotice: document.getElementById('personalizeDisabledNotice'),
+      personalizeFieldsWrapper: document.getElementById('personalizeFieldsWrapper'),
+      chkUseName: document.getElementById('chkUseName'),
+      chkUseBirthDate: document.getElementById('chkUseBirthDate'),
+      chkUseHistory: document.getElementById('chkUseHistory'),
+      chkUseConcern: document.getElementById('chkUseConcern'),
+
+      palmFileInput: document.getElementById('palmFileInput'),
+      startCameraBtn: document.getElementById('startCameraBtn'),
+      capturePhotoBtn: document.getElementById('capturePhotoBtn'),
+      switchCameraBtn: document.getElementById('switchCameraBtn'),
+      closeCameraBtn: document.getElementById('closeCameraBtn'),
+      generateSamplePalmBtn: document.getElementById('generateSamplePalmBtn'),
+      userNameInput: document.getElementById('userNameInput'),
+      birthDateInput: document.getElementById('birthDateInput'),
+      userHistoryInput: document.getElementById('userHistoryInput'),
+      userConcernInput: document.getElementById('userConcernInput'),
+      startReadingBtn: document.getElementById('startReadingBtn'),
+
+      // 結果表示
+      resultSection: document.getElementById('resultSection'),
+      captureResultCard: document.getElementById('captureResultCard'),
+      resultDateBadge: document.getElementById('resultDateBadge'),
+      resultTitleHeading: document.getElementById('resultTitleHeading'),
+      resultPersonalMeta: document.getElementById('resultPersonalMeta'),
+      resultTotalScoreNum: document.getElementById('resultTotalScoreNum'),
+      resultTotalRankText: document.getElementById('resultTotalRankText'),
+      resultPalmSnapshot: document.getElementById('resultPalmSnapshot'),
+      resultPalmMetricSummary: document.getElementById('resultPalmMetricSummary'),
+      coreLinesContainer: document.getElementById('coreLinesContainer'),
+      narrativeSectionTitle: document.getElementById('narrativeSectionTitle'),
+      resultPersonalizedNarrative: document.getElementById('resultPersonalizedNarrative'),
+      resultPluginCountLabel: document.getElementById('resultPluginCountLabel'),
+      pluginResultsGrid: document.getElementById('pluginResultsGrid'),
+      recalculatePluginsBtn: document.getElementById('recalculatePluginsBtn'),
+      downloadResultImgBtn: document.getElementById('downloadResultImgBtn')
+    };
+
+    /********************************************************************
+     * 4. ユーティリティ＆トースト通知
+     ********************************************************************/
+    function showToast(message, icon = '✨') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-mystic-900/95 border border-amber-400/50 text-amber-100 text-xs sm:text-sm shadow-2xl transition-all duration-300';
+      toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    function getThemeClasses(theme) {
+      const map = {
+        amber: {
+          border: 'border-amber-400/45',
+          bg: 'bg-amber-500/10',
+          badge: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
+          bar: 'from-amber-400 to-yellow-300',
+          text: 'text-amber-300'
+        },
+        emerald: {
+          border: 'border-emerald-400/45',
+          bg: 'bg-emerald-500/10',
+          badge: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/40',
+          bar: 'from-emerald-400 to-teal-300',
+          text: 'text-emerald-300'
+        },
+        sky: {
+          border: 'border-sky-400/45',
+          bg: 'bg-sky-500/10',
+          badge: 'bg-sky-400/20 text-sky-300 border-sky-400/40',
+          bar: 'from-sky-400 to-indigo-300',
+          text: 'text-sky-300'
+        },
+        rose: {
+          border: 'border-rose-400/45',
+          bg: 'bg-rose-500/10',
+          badge: 'bg-rose-400/20 text-rose-300 border-rose-400/40',
+          bar: 'from-rose-400 to-pink-300',
+          text: 'text-rose-300'
+        },
+        violet: {
+          border: 'border-violet-400/45',
+          bg: 'bg-violet-500/10',
+          badge: 'bg-violet-400/20 text-violet-300 border-violet-400/40',
+          bar: 'from-violet-400 to-purple-300',
+          text: 'text-violet-300'
+        }
+      };
+      return map[theme] || map.amber;
+    }
+
+    /********************************************************************
+     * 5. 下部プラグインON/OFFチェックリストUI ＆ 管理モーダル描画
+     ********************************************************************/
+    function renderPluginUI() {
+      const allPlugins = pluginManager.getAll();
+      const enabledPlugins = pluginManager.getEnabled();
+
+      els.activePluginCountBadge.textContent = enabledPlugins.length;
+
+      // STEP 3（画面下部）のチェックボックス付きプラグインON/OFFカード描画
+      els.pluginSelectorBar.innerHTML = '';
+      allPlugins.forEach(plugin => {
+        const theme = getThemeClasses(plugin.colorTheme);
+        const labelEl = document.createElement('label');
+        const activeCls = plugin.enabled
+          ? `${theme.border} ${theme.bg} shadow-[0_0_15px_rgba(229,193,88,0.15)]`
+          : 'border-purple-500/20 bg-mystic-950/60 opacity-65 hover:opacity-90';
+        labelEl.className = `cursor-pointer rounded-2xl p-3.5 border transition flex flex-col justify-between gap-2 select-none ${activeCls}`;
+        labelEl.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">${plugin.icon || '🌟'}</span>
+              <span class="font-serif font-bold text-xs sm:text-sm text-amber-100">${plugin.name}</span>
+            </div>
+            <input type="checkbox" data-bottom-toggle-id="${plugin.id}" ${plugin.enabled ? 'checked' : ''}
+              class="w-4 h-4 accent-amber-400 rounded cursor-pointer shrink-0 mt-0.5" />
+          </div>
+          <p class="text-[11px] text-purple-200/75 line-clamp-2 leading-relaxed">${plugin.description}</p>
+          <div class="flex items-center justify-between pt-1 border-t border-white/10 text-[10px]">
+            <span class="text-purple-300/70">${plugin.builtIn ? '公式プラグイン' : 'カスタム作成'}</span>
+            <span class="px-2 py-0.5 rounded-full font-bold ${plugin.enabled ? 'bg-amber-400 text-mystic-950' : 'bg-purple-950 text-purple-300'}">
+              ${plugin.enabled ? 'ON (有効)' : 'OFF'}
+            </span>
+          </div>
+        `;
+        const chk = labelEl.querySelector('[data-bottom-toggle-id]');
+        chk.addEventListener('change', () => {
+          pluginManager.toggle(plugin.id);
+          renderPluginUI();
+          if (!els.resultSection.classList.contains('hidden') && state.lastPalmMetrics) {
+            renderReadingResults();
+          }
+        });
+        els.pluginSelectorBar.appendChild(labelEl);
+      });
+
+      // モーダル内カード一覧描画
+      els.pluginManagerCardsList.innerHTML = '';
+      allPlugins.forEach(plugin => {
+        const theme = getThemeClasses(plugin.colorTheme);
+        const card = document.createElement('div');
+        card.className = `rounded-2xl p-4 border transition flex flex-col justify-between gap-3 ${plugin.enabled ? `${theme.border} ${theme.bg}` : 'border-purple-500/20 bg-mystic-950/60 opacity-75'}`;
+        card.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">${plugin.icon || '🌟'}</span>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <h4 class="font-serif font-bold text-sm text-amber-100">${plugin.name}</h4>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full border ${plugin.builtIn ? 'border-purple-400/30 text-purple-200 bg-purple-900/40' : 'border-amber-400/40 text-amber-200 bg-amber-500/20'}">
+                      ${plugin.builtIn ? '公式搭載' : 'カスタム'}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-purple-300/80 mt-0.5">${plugin.description}</p>
+                </div>
+              </div>
+              <label class="cursor-pointer inline-flex items-center">
+                <input type="checkbox" data-toggle-id="${plugin.id}" ${plugin.enabled ? 'checked' : ''} class="w-4 h-4 accent-amber-400 rounded cursor-pointer" />
+              </label>
+            </div>
+            <div class="flex flex-wrap gap-1 pt-1">
+              ${(plugin.axes || []).map(ax => `<span class="text-[10px] px-2 py-0.5 rounded-md bg-mystic-950/70 text-purple-200 border border-purple-500/25">📊 ${ax}</span>`).join('')}
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-purple-500/20 text-[11px]">
+            <span class="text-purple-300/70">主軸: ${plugin.primaryFeature} / 基準値: ${plugin.baseScore}</span>
+            <div class="flex items-center gap-2">
+              <button type="button" data-edit-id="${plugin.id}" class="text-amber-300 hover:underline">編集・複製</button>
+              ${!plugin.builtIn ? `<button type="button" data-delete-id="${plugin.id}" class="text-rose-400 hover:underline">削除</button>` : ''}
+            </div>
+          </div>
+        `;
+        els.pluginManagerCardsList.appendChild(card);
+      });
+
+      els.pluginManagerCardsList.querySelectorAll('[data-toggle-id]').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+          pluginManager.toggle(e.target.getAttribute('data-toggle-id'));
+          renderPluginUI();
+          if (!els.resultSection.classList.contains('hidden') && state.lastPalmMetrics) {
+            renderReadingResults();
+          }
+        });
+      });
+
+      els.pluginManagerCardsList.querySelectorAll('[data-edit-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-edit-id');
+          const p = pluginManager.getAll().find(item => item.id === id);
+          if (p) {
+            populatePluginForm(p);
+            switchPluginModalTab('create');
+          }
+        });
+      });
+
+      els.pluginManagerCardsList.querySelectorAll('[data-delete-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-delete-id');
+          pluginManager.deletePlugin(id);
+          renderPluginUI();
+          showToast('カスタムプラグインを削除しました', '🗑️');
+        });
+      });
+
+      els.pluginJsonTextarea.value = JSON.stringify(pluginManager.getAll(), null, 2);
+    }
+
+    function switchPluginModalTab(tabName) {
+      document.querySelectorAll('.plugin-modal-tab').forEach(btn => {
+        const isTarget = btn.getAttribute('data-tab') === tabName;
+        btn.className = isTarget
+          ? 'plugin-modal-tab px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-amber-400 text-amber-300'
+          : 'plugin-modal-tab px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-purple-300 hover:text-amber-200';
+      });
+      document.getElementById('pluginTabList').classList.toggle('hidden', tabName !== 'list');
+      document.getElementById('pluginTabCreate').classList.toggle('hidden', tabName !== 'create');
+      document.getElementById('pluginTabJson').classList.toggle('hidden', tabName !== 'json');
+    }
+
+    function populatePluginForm(p) {
+      document.getElementById('cpEditId').value = p.builtIn ? '' : p.id;
+      document.getElementById('cpIcon').value = p.icon || '🌟';
+      document.getElementById('cpName').value = p.builtIn ? `${p.name}（カスタム改）` : p.name;
+      document.getElementById('cpColorTheme').value = p.colorTheme || 'amber';
+      document.getElementById('cpDescription').value = p.description || '';
+      document.getElementById('cpPrimaryFeature').value = p.primaryFeature || 'vitality';
+      document.getElementById('cpBaseScore').value = p.baseScore || 70;
+      document.getElementById('cpKeywords').value = (p.keywords || []).join(', ');
+      document.getElementById('cpAxis1').value = (p.axes && p.axes[0]) || '直感シンクロ率';
+      document.getElementById('cpAxis2').value = (p.axes && p.axes[1]) || '幸運引き寄せ力';
+      document.getElementById('cpAxis3').value = (p.axes && p.axes[2]) || '継続エネルギー';
+      document.getElementById('cpMsgHigh').value = (p.messages && p.messages.high) || '';
+      document.getElementById('cpMsgMid').value = (p.messages && p.messages.mid) || '';
+      document.getElementById('cpMsgLow').value = (p.messages && p.messages.low) || '';
+      document.getElementById('cpLuckyItems').value = (p.luckyItems || []).join(', ');
+    }
+
+    /********************************************************************
+     * 6. STEP 2 パーソナライズ チェックボタン切り替え制御
+     ********************************************************************/
+    function updatePersonalizeToggleState() {
+      const masterOn = els.enablePersonalizeMasterChk.checked;
+      els.personalizeMasterLabel.textContent = masterOn ? 'パーソナル反映: ON' : 'パーソナル反映: OFF';
+      els.personalizeMasterLabel.className = masterOn ? 'text-xs font-bold text-amber-300' : 'text-xs font-bold text-purple-400';
+
+      els.personalizeFieldsWrapper.classList.toggle('hidden', !masterOn);
+      els.personalizeDisabledNotice.classList.toggle('hidden', masterOn);
+
+      // 各個別入力欄の有効・無効スタイル同期
+      els.userNameInput.disabled = !els.chkUseName.checked;
+      els.userNameInput.classList.toggle('opacity-40', !els.chkUseName.checked);
+
+      els.birthDateInput.disabled = !els.chkUseBirthDate.checked;
+      els.birthDateInput.classList.toggle('opacity-40', !els.chkUseBirthDate.checked);
+
+      els.userHistoryInput.disabled = !els.chkUseHistory.checked;
+      els.userHistoryInput.classList.toggle('opacity-40', !els.chkUseHistory.checked);
+
+      els.userConcernInput.disabled = !els.chkUseConcern.checked;
+      els.userConcernInput.classList.toggle('opacity-40', !els.chkUseConcern.checked);
+
+      if (!els.resultSection.classList.contains('hidden') && state.lastPalmMetrics) {
+        renderReadingResults();
+      }
+    }
+
+    /********************************************************************
+     * 7. 手のひら画像の取り込み・カメラ撮影・サンプル手相生成
+     ********************************************************************/
+    function stopCameraStream() {
+      if (state.cameraStream) {
+        state.cameraStream.getTracks().forEach(track => track.stop());
+        state.cameraStream = null;
+      }
+      els.cameraVideo.classList.add('hidden');
+      els.cameraGuideOverlay.classList.add('hidden');
+      els.cameraActiveControls.classList.add('hidden');
+    }
+
+    async function startCamera() {
+      stopCameraStream();
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: state.facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 960 }
+          },
+          audio: false
+        });
+        state.cameraStream = stream;
+        els.cameraVideo.srcObject = stream;
+        els.emptyStagePlaceholder.classList.add('hidden');
+        els.palmCanvas.classList.add('hidden');
+        els.overlayCanvas.classList.add('hidden');
+        els.cameraVideo.classList.remove('hidden');
+        els.cameraGuideOverlay.classList.remove('hidden');
+        els.cameraActiveControls.classList.remove('hidden');
+        els.imageSourceStatus.textContent = 'カメラ起動中';
+      } catch (err) {
+        showToast('カメラへのアクセスが許可されていないか、利用できません。写真アップロードまたはサンプル手相生成をご利用ください。', '⚠️');
+      }
+    }
+
+    function captureFromCamera() {
+      if (!state.cameraStream) return;
+      const video = els.cameraVideo;
+      const canvas = els.palmCanvas;
+      canvas.width = video.videoWidth || 800;
+      canvas.height = video.videoHeight || 600;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      stopCameraStream();
+      state.hasImage = true;
+      state.imageSourceType = 'camera';
+      els.palmCanvas.classList.remove('hidden');
+      els.overlayCanvas.classList.add('hidden');
+      els.imageSourceStatus.textContent = 'カメラ撮影完了';
+      showToast('手のひら写真を撮影しました！', '📸');
+    }
+
+    function loadUploadedFile(file) {
+      if (!file) return;
+      stopCameraStream();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = els.palmCanvas;
+          const maxDim = 960;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+
+          els.emptyStagePlaceholder.classList.add('hidden');
+          els.palmCanvas.classList.remove('hidden');
+          els.overlayCanvas.classList.add('hidden');
+          state.hasImage = true;
+          state.imageSourceType = 'upload';
+          els.imageSourceStatus.textContent = '写真アップロード済';
+          showToast('手のひら画像を読み込みました！', '📁');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function generateMysticSamplePalm() {
+      stopCameraStream();
+      const canvas = els.palmCanvas;
+      const w = 800;
+      const h = 600;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      const seed = state.sampleSeedCounter++;
+      const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.52, 30, w * 0.5, h * 0.5, w * 0.6);
+      bgGrad.addColorStop(0, '#2a1f3d');
+      bgGrad.addColorStop(0.6, '#140f26');
+      bgGrad.addColorStop(1, '#080610');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(229, 193, 88, 0.18)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.54, 220, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.54, 185, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      const palmGrad = ctx.createRadialGradient(w * 0.5, h * 0.58, 20, w * 0.5, h * 0.55, 230);
+      palmGrad.addColorStop(0, '#f3cfb3');
+      palmGrad.addColorStop(0.65, '#ddb092');
+      palmGrad.addColorStop(1, '#b68367');
+      ctx.fillStyle = palmGrad;
+      ctx.strokeStyle = 'rgba(255, 228, 196, 0.45)';
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.moveTo(w * 0.38, h * 0.90);
+      ctx.quadraticCurveTo(w * 0.28, h * 0.72, w * 0.24, h * 0.58);
+      ctx.quadraticCurveTo(w * 0.17, h * 0.46, w * 0.22, h * 0.40);
+      ctx.quadraticCurveTo(w * 0.28, h * 0.39, w * 0.33, h * 0.49);
+      ctx.lineTo(w * 0.36, h * 0.20);
+      ctx.quadraticCurveTo(w * 0.39, h * 0.14, w * 0.42, h * 0.20);
+      ctx.lineTo(w * 0.43, h * 0.39);
+      ctx.lineTo(w * 0.46, h * 0.13);
+      ctx.quadraticCurveTo(w * 0.495, h * 0.08, w * 0.525, h * 0.13);
+      ctx.lineTo(w * 0.53, h * 0.39);
+      ctx.lineTo(w * 0.56, h * 0.17);
+      ctx.quadraticCurveTo(w * 0.59, h * 0.12, w * 0.62, h * 0.18);
+      ctx.lineTo(w * 0.61, h * 0.42);
+      ctx.lineTo(w * 0.66, h * 0.27);
+      ctx.quadraticCurveTo(w * 0.69, h * 0.23, w * 0.71, h * 0.29);
+      ctx.lineTo(w * 0.67, h * 0.54);
+      ctx.quadraticCurveTo(w * 0.68, h * 0.75, w * 0.58, h * 0.90);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      const offset = (seed % 5) * 6 - 12;
+      ctx.strokeStyle = 'rgba(130, 72, 48, 0.55)';
+      ctx.lineWidth = 2.8;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(w * 0.36, h * 0.49);
+      ctx.quadraticCurveTo(w * 0.47, h * 0.60, w * 0.44 + offset * 0.4, h * 0.82);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(w * 0.36, h * 0.49);
+      ctx.quadraticCurveTo(w * 0.50, h * 0.54, w * 0.61, h * 0.61 + offset * 0.5);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(w * 0.66, h * 0.51);
+      ctx.quadraticCurveTo(w * 0.52, h * 0.48, w * 0.39, h * 0.42 - offset * 0.3);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(w * 0.49, h * 0.83);
+      ctx.quadraticCurveTo(w * 0.50 + offset * 0.3, h * 0.62, w * 0.49, h * 0.43);
+      ctx.stroke();
+      ctx.restore();
+
+      els.emptyStagePlaceholder.classList.add('hidden');
+      els.palmCanvas.classList.remove('hidden');
+      els.overlayCanvas.classList.add('hidden');
+      state.hasImage = true;
+      state.imageSourceType = 'sample';
+      els.imageSourceStatus.textContent = `サンプル手相 #${seed}`;
+      showToast(`神秘サンプル手相（パターン #${seed}）を生成しました`, '🪄');
+    }
+
+    /********************************************************************
+     * 8. 画像ピクセル解析＆オーバーレイ手相ライン描画
+     ********************************************************************/
+    function analyzePalmCanvasAndDrawOverlay() {
+      const srcCanvas = els.palmCanvas;
+      const w = srcCanvas.width || 800;
+      const h = srcCanvas.height || 600;
+      const ctx = srcCanvas.getContext('2d');
+
+      const sampleW = Math.max(40, Math.floor(w * 0.5));
+      const sampleH = Math.max(40, Math.floor(h * 0.5));
+      const startX = Math.floor((w - sampleW) / 2);
+      const startY = Math.floor((h - sampleH) / 2);
+      const imgData = ctx.getImageData(startX, startY, sampleW, sampleH).data;
+
+      let sumR = 0, sumG = 0, sumB = 0;
+      let edgeAccumulator = 0;
+      const step = 16;
+      let count = 0;
+
+      for (let i = 0; i < imgData.length - step; i += step) {
+        const r = imgData[i];
+        const g = imgData[i + 1];
+        const b = imgData[i + 2];
+        const nextR = imgData[i + 4];
+        sumR += r;
+        sumG += g;
+        sumB += b;
+        edgeAccumulator += Math.abs(r - nextR);
+        count++;
+      }
+
+      const avgR = Math.round(sumR / Math.max(1, count));
+      const avgG = Math.round(sumG / Math.max(1, count));
+      const avgB = Math.round(sumB / Math.max(1, count));
+      const avgEdge = edgeAccumulator / Math.max(1, count);
+
+      const seed = (avgR * 7 + avgG * 13 + avgB * 17 + Math.round(avgEdge * 23)) % 1000;
+
+      const vitalityScore = 72 + ((avgR + seed) % 25);
+      const intellectScore = 70 + ((avgG + Math.round(avgEdge * 3) + seed) % 27);
+      const emotionScore = 73 + ((avgB + avgR + seed) % 24);
+      const fortuneScore = 71 + ((avgR + avgG + avgB + seed) % 26);
+
+      const ov = els.overlayCanvas;
+      ov.width = w;
+      ov.height = h;
+      const octx = ov.getContext('2d');
+      octx.clearRect(0, 0, w, h);
+
+      const shiftX = ((seed % 11) - 5) * 0.004;
+      const shiftY = (((seed >> 2) % 11) - 5) * 0.004;
+
+      const drawGlowingCurve = (pts, color, label) => {
+        octx.save();
+        octx.strokeStyle = color;
+        octx.shadowColor = color;
+        octx.shadowBlur = 12;
+        octx.lineWidth = Math.max(3, w * 0.0055);
+        octx.lineCap = 'round';
+        octx.beginPath();
+        octx.moveTo(pts[0].x * w, pts[0].y * h);
+        octx.quadraticCurveTo(pts[1].x * w, pts[1].y * h, pts[2].x * w, pts[2].y * h);
+        octx.stroke();
+
+        pts.forEach(pt => {
+          octx.fillStyle = '#ffffff';
+          octx.beginPath();
+          octx.arc(pt.x * w, pt.y * h, Math.max(3.5, w * 0.006), 0, Math.PI * 2);
+          octx.fill();
+        });
+
+        const mid = pts[1];
+        octx.font = `bold ${Math.max(11, Math.round(w * 0.017))}px "Noto Sans JP", sans-serif`;
+        const textW = octx.measureText(label).width;
+        octx.fillStyle = 'rgba(10, 8, 22, 0.82)';
+        octx.fillRect(mid.x * w - 6, mid.y * h - 18, textW + 12, 22);
+        octx.strokeStyle = color;
+        octx.lineWidth = 1;
+        octx.strokeRect(mid.x * w - 6, mid.y * h - 18, textW + 12, 22);
+        octx.fillStyle = color;
+        octx.fillText(label, mid.x * w, mid.y * h - 3);
+        octx.restore();
+      };
+
+      drawGlowingCurve([
+        { x: 0.36 + shiftX, y: 0.49 + shiftY },
+        { x: 0.46 + shiftX, y: 0.61 + shiftY },
+        { x: 0.44 + shiftX, y: 0.81 + shiftY }
+      ], '#34d399', '生命線');
+
+      drawGlowingCurve([
+        { x: 0.37 + shiftX, y: 0.49 + shiftY },
+        { x: 0.51 + shiftX, y: 0.55 + shiftY },
+        { x: 0.62 + shiftX, y: 0.62 + shiftY }
+      ], '#38bdf8', '知能線');
+
+      drawGlowingCurve([
+        { x: 0.65 + shiftX, y: 0.50 + shiftY },
+        { x: 0.52 + shiftX, y: 0.46 + shiftY },
+        { x: 0.39 + shiftX, y: 0.41 + shiftY }
+      ], '#fb7185', '感情線');
+
+      drawGlowingCurve([
+        { x: 0.49 + shiftX, y: 0.82 + shiftY },
+        { x: 0.50 + shiftX, y: 0.62 + shiftY },
+        { x: 0.49 + shiftX, y: 0.42 + shiftY }
+      ], '#facc15', '運命線');
+
+      ov.classList.remove('hidden');
+
+      const mergedCanvas = document.createElement('canvas');
+      mergedCanvas.width = w;
+      mergedCanvas.height = h;
+      const mctx = mergedCanvas.getContext('2d');
+      mctx.drawImage(srcCanvas, 0, 0);
+      mctx.drawImage(ov, 0, 0);
+
+      return {
+        seed,
+        vitalityScore,
+        intellectScore,
+        emotionScore,
+        fortuneScore,
+        avgWarmth: avgR,
+        contrastIndex: Math.round(avgEdge * 10) / 10,
+        snapshotDataUrl: mergedCanvas.toDataURL('image/png')
+      };
+    }
+
+    /********************************************************************
+     * 9. 生年月日ライフパス算出＆ユーザー入力コンテキスト取得（チェック状態連動）
+     ********************************************************************/
+    function calculateLifePathNumber(dateStr) {
+      if (!dateStr) return null;
+      const digits = dateStr.replace(/\D/g, '');
+      if (!digits) return null;
+      let sum = digits.split('').reduce((acc, d) => acc + Number(d), 0);
+      while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+        sum = String(sum).split('').reduce((acc, d) => acc + Number(d), 0);
+      }
+      return sum;
+    }
+
+    function getUserContext() {
+      const personalizeEnabled = els.enablePersonalizeMasterChk.checked;
+      const name = (personalizeEnabled && els.chkUseName.checked) ? els.userNameInput.value.trim() : '';
+      const birthDate = (personalizeEnabled && els.chkUseBirthDate.checked) ? els.birthDateInput.value : '';
+      const history = (personalizeEnabled && els.chkUseHistory.checked) ? els.userHistoryInput.value.trim() : '';
+      const concern = (personalizeEnabled && els.chkUseConcern.checked) ? els.userConcernInput.value.trim() : '';
+      const handSideEl = document.querySelector('input[name="palmHandSide"]:checked');
+      const handSide = handSideEl ? handSideEl.value : 'right';
+      const lifePathNumber = calculateLifePathNumber(birthDate);
+
+      return { personalizeEnabled, name, birthDate, history, concern, handSide, lifePathNumber };
+    }
+
+    /********************************************************************
+     * 10. スキャンアニメーション＆鑑定結果レンダリング
+     ********************************************************************/
+    async function runFullScanAndReading() {
+      if (!state.hasImage) {
+        generateMysticSamplePalm();
+      }
+
+      els.startReadingBtn.disabled = true;
+      els.scanAnimationOverlay.classList.remove('hidden');
+
+      const enabledPlugins = pluginManager.getEnabled();
+      const pluginNames = enabledPlugins.map(p => p.name).join(' / ') || '基本四大手相鑑定';
+
+      const steps = [
+        { pct: 20, label: '手のひらの輪郭・丘（金星丘・太陽丘・月丘）をマッピング中...', sub: 'バイオメトリクス特徴点抽出' },
+        { pct: 48, label: '四大主要線（生命線・知能線・感情線・運命線）の深さと分岐を解析中...', sub: '流年法・パーソナライズ照合中' },
+        { pct: 78, label: '有効な占いプラグインのカスタムロジックを実行中...', sub: `対象: ${pluginNames}` },
+        { pct: 100, label: '統合鑑定書を生成完了！', sub: '結果カードを展開します' }
+      ];
+
+      for (const s of steps) {
+        els.scanPercentText.textContent = `${s.pct}%`;
+        els.scanProgressBar.style.width = `${s.pct}%`;
+        els.scanStepLabel.textContent = s.label;
+        els.scanPluginSubLabel.textContent = s.sub;
+        await new Promise(r => setTimeout(r, 450));
+      }
+
+      state.lastPalmMetrics = analyzePalmCanvasAndDrawOverlay();
+      els.scanAnimationOverlay.classList.add('hidden');
+      els.startReadingBtn.disabled = false;
+
+      renderReadingResults();
+      els.resultSection.classList.remove('hidden');
+      els.resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('AI手相＆プラグイン統合鑑定が完了しました！', '🔯');
+    }
+
+    function renderReadingResults() {
+      const metrics = state.lastPalmMetrics;
+      if (!metrics) return;
+
+      const userCtx = getUserContext();
+      const enabledPlugins = pluginManager.getEnabled();
+      const pluginEvaluations = enabledPlugins.map(p => pluginManager.evaluatePlugin(p, metrics, userCtx));
+
+      const now = new Date();
+      els.resultDateBadge.textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+      const displayName = userCtx.name ? `${userCtx.name}様` : 'ゲスト様';
+      const handLabel = userCtx.handSide === 'left' ? '左手（先天運・潜在能力）' : '右手（現在・未来の開拓運）';
+      els.resultTitleHeading.textContent = `${displayName}の神秘手相＆拡張プラグイン鑑定書`;
+
+      const metaParts = [`鑑定対象: ${handLabel}`];
+      metaParts.push(`パーソナル反映: ${userCtx.personalizeEnabled ? 'ON' : 'OFF'}`);
+      if (userCtx.birthDate) {
+        metaParts.push(`生年月日: ${userCtx.birthDate}（数秘ライフパス: ${userCtx.lifePathNumber}）`);
+      }
+      metaParts.push(`適用プラグイン: ${enabledPlugins.length}種`);
+      els.resultPersonalMeta.textContent = metaParts.join(' ｜ ');
+
+      els.resultPalmSnapshot.src = metrics.snapshotDataUrl;
+      els.resultPalmMetricSummary.textContent = `温もり指数: ${metrics.avgWarmth} / 線コントラスト: ${metrics.contrastIndex} / 解析シード: #${metrics.seed}`;
+
+      const coreAvg = (metrics.vitalityScore + metrics.intellectScore + metrics.emotionScore + metrics.fortuneScore) / 4;
+      const pluginAvg = pluginEvaluations.length > 0
+        ? pluginEvaluations.reduce((acc, r) => acc + r.score, 0) / pluginEvaluations.length
+        : coreAvg;
+      const totalScore = Math.round(coreAvg * 0.55 + pluginAvg * 0.45);
+      els.resultTotalScoreNum.textContent = totalScore;
+
+      let rankText = 'Aランク・上昇吉兆';
+      if (totalScore >= 90) rankText = 'SSランク・天恵大吉兆';
+      else if (totalScore >= 82) rankText = 'Sランク・極上開運期';
+      else if (totalScore < 72) rankText = 'B+ランク・飛躍準備期';
+      els.resultTotalRankText.textContent = rankText;
+
+      const coreLinesData = [
+        {
+          name: '生命線 (Life Line)',
+          score: metrics.vitalityScore,
+          color: 'text-emerald-300 border-emerald-400/35 bg-emerald-500/10',
+          desc: metrics.vitalityScore >= 84
+            ? '金星丘を豊かに囲む力強い弧。高い自然治癒力と粘り強いバイタリティに恵まれています。'
+            : '穏やかでバランスの取れた生命線。自分のペースを守ることで長期的に安定した健康運を維持できます。'
+        },
+        {
+          name: '知能線 (Head Line)',
+          score: metrics.intellectScore,
+          color: 'text-sky-300 border-sky-400/35 bg-sky-500/10',
+          desc: metrics.intellectScore >= 84
+            ? '論理的思考と月丘への豊かなイマジネーションが融合。企画・専門職で独自の才能を発揮する相です。'
+            : '現実的で着実な判断力を持つ知能線。周囲の状況を冷静に見極め、失敗の少ない選択ができます。'
+        },
+        {
+          name: '感情線 (Heart Line)',
+          score: metrics.emotionScore,
+          color: 'text-rose-300 border-rose-400/35 bg-rose-500/10',
+          desc: metrics.emotionScore >= 84
+            ? '愛情深く、人や動物・仲間との深い信頼関係を築くカリスマ的な温かさが手相に表れています。'
+            : '繊細な優しさと誠実さを秘めた感情線。少人数の深い絆を大切にすることで心が満たされます。'
+        },
+        {
+          name: '運命線 (Fate Line)',
+          score: metrics.fortuneScore,
+          color: 'text-amber-300 border-amber-400/35 bg-amber-500/10',
+          desc: metrics.fortuneScore >= 84
+            ? '中指の付け根（土星丘）へ向かう明確な縦線。自らの意思で未来を切り拓き、引き立て運にも恵まれます。'
+            : '環境の変化に柔軟に適応しながら、人生の後半に向けてじわじわと運気が大成する大器晩成型です。'
+        }
+      ];
+
+      els.coreLinesContainer.innerHTML = coreLinesData.map(line => `
+        <div class="rounded-xl p-3 border ${line.color} space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-xs">${line.name}</span>
+            <span class="font-display font-bold text-sm">${line.score}<span class="text-[10px] opacity-75">/100</span></span>
+          </div>
+          <p class="text-[11px] text-purple-100/85 leading-relaxed">${line.desc}</p>
+        </div>
+      `).join('');
+
+      // パーソナライズ深層リーディング生成（チェック状態に応じて切り替え）
+      const narrativeParts = [];
+      if (!userCtx.personalizeEnabled) {
+        els.narrativeSectionTitle.textContent = 'AI純粋手相波動リーディング（パーソナル情報OFFモード）';
+        narrativeParts.push(`【${handLabel}の純粋手相リーディング】\n掌の中央（火星平原）から各丘へと広がるエネルギーの流れが整っており、四大基本線のバランスから見て現在が運気の好転期であることを示しています。`);
+        narrativeParts.push(`【開運アクション】\nより詳細な流年法やキーワード共鳴診断を行いたい場合は、STEP 2の「パーソナル反映」にチェックを入れると即座に深層リーディングが統合されます。`);
+      } else {
+        els.narrativeSectionTitle.textContent = 'AIパーソナライズ深層リーディング（チェック項目連動）';
+        if (userCtx.birthDate && userCtx.lifePathNumber) {
+          narrativeParts.push(`【数秘ライフパス「${userCtx.lifePathNumber}」× ${handLabel}の共鳴】\n生年月日から導き出される魂の使命ナンバー「${userCtx.lifePathNumber}」と、今回スキャンした${handLabel}のバランスが美しく一致しています。`);
+        } else {
+          narrativeParts.push(`【${handLabel}の全体波動リーディング】\n掌の中央（火星平原）から各丘へと広がるエネルギーの流れが整っており、現在が運気の転換点であることを示しています。`);
+        }
+
+        if (userCtx.history) {
+          narrativeParts.push(`【これまでの歩み（${userCtx.history}）からのメッセージ】\nあなたがこれまで積み重ねてきた経験や愛情は、知能線と運命線の交差点に「努力の結晶紋」として刻まれています。過去の選択はすべて正解であり、次のステージの土台となっています。`);
+        }
+
+        if (userCtx.concern) {
+          narrativeParts.push(`【現在のテーマ・お悩み（${userCtx.concern}）への導き】\n手相の流年法で見ると、現在抱えているテーマに対して「3ヶ月以内に視界が開けるサポート運（太陽線の補助線）」が浮き出ています。焦って結論を急ぐよりも、直感で心地よいと感じる選択を優先してください。`);
+        } else {
+          narrativeParts.push(`【今後の開運アドバイス】\n手相は日々の意識と行動で3ヶ月ごとに変化します。朝起きたときに両手を軽く擦り合わせて温めることで、掌の気血と運気の巡りがさらに活性化します。`);
+        }
+      }
+
+      els.resultPersonalizedNarrative.textContent = narrativeParts.join('\n\n');
+
+      els.resultPluginCountLabel.textContent = `${pluginEvaluations.length}個のプラグインが稼働中`;
+      if (pluginEvaluations.length === 0) {
+        els.pluginResultsGrid.innerHTML = `
+          <div class="col-span-2 rounded-2xl border border-purple-500/30 bg-mystic-950/60 p-6 text-center text-xs text-purple-300">
+            現在有効な占いプラグインがありません。STEP 3のプラグイン一覧からチェックを入れてONにしてください。
+          </div>
+        `;
+      } else {
+        els.pluginResultsGrid.innerHTML = pluginEvaluations.map(ev => {
+          const theme = getThemeClasses(ev.colorTheme);
+          return `
+            <div class="rounded-2xl p-4 sm:p-5 border ${theme.border} ${theme.bg} flex flex-col justify-between space-y-4">
+              <div class="space-y-3">
+                <div class="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-2xl">${ev.icon}</span>
+                    <div>
+                      <h5 class="font-serif font-bold text-sm sm:text-base text-amber-100">${ev.name}</h5>
+                      <p class="text-[11px] text-purple-200/75">${ev.description}</p>
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="text-[10px] block text-purple-200/70">プラグイン指数</span>
+                    <span class="font-display font-bold text-xl ${theme.text}">${ev.score}<span class="text-[10px]">pt</span></span>
+                  </div>
+                </div>
+
+                <div class="space-y-1.5">
+                  ${ev.subScores.map(sub => `
+                    <div class="space-y-0.5">
+                      <div class="flex justify-between text-[11px]">
+                        <span class="text-purple-100/90">${sub.label}</span>
+                        <span class="font-mono ${theme.text}">${sub.score}%</span>
+                      </div>
+                      <div class="w-full h-1.5 rounded-full bg-mystic-950/80 overflow-hidden">
+                        <div class="h-full bg-gradient-to-r ${theme.bar}" style="width: ${sub.score}%"></div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+
+                <p class="text-xs text-purple-100/95 leading-relaxed whitespace-pre-line bg-mystic-950/60 p-3 rounded-xl border border-white/5">${ev.message}</p>
+              </div>
+
+              <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
+                <span class="text-purple-300/80">🍀 開運ラッキートリガー:</span>
+                <span class="font-bold ${theme.text}">${ev.luckyItem}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    /********************************************************************
+     * 11. html2canvas による鑑定結果カード画像保存機能
+     ********************************************************************/
+    async function downloadReadingResultImage() {
+      const btn = els.downloadResultImgBtn;
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳</span><span>高解像度画像を生成中...</span>`;
+
+      try {
+        const cardEl = els.captureResultCard;
+        const canvas = await html2canvas(cardEl, {
+          backgroundColor: '#0d0a1a',
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+
+        const link = document.createElement('a');
+        const dateStr = new Date().toISOString().slice(0, 10);
+        link.download = `mystical-palm-reading-${dateStr}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('著作権表示入りの鑑定結果カードを画像保存しました！', '💾');
+      } catch (err) {
+        console.error(err);
+        showToast('画像の生成中にエラーが発生しました', '⚠️');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    /********************************************************************
+     * 12. イベントリスナー登録＆初期化
+     ********************************************************************/
+    function initApp() {
+      renderPluginUI();
+      updatePersonalizeToggleState();
+
+      // STEP 2 チェックボタン群イベント
+      els.enablePersonalizeMasterChk.addEventListener('change', updatePersonalizeToggleState);
+      els.chkUseName.addEventListener('change', updatePersonalizeToggleState);
+      els.chkUseBirthDate.addEventListener('change', updatePersonalizeToggleState);
+      els.chkUseHistory.addEventListener('change', updatePersonalizeToggleState);
+      els.chkUseConcern.addEventListener('change', updatePersonalizeToggleState);
+
+      // プラグインモーダル開閉
+      els.openPluginModalBtn.addEventListener('click', () => {
+        renderPluginUI();
+        switchPluginModalTab('list');
+        els.pluginModalBackdrop.classList.remove('hidden');
+      });
+
+      els.quickAddPluginBtn.addEventListener('click', () => {
+        renderPluginUI();
+        switchPluginModalTab('create');
+        els.pluginModalBackdrop.classList.remove('hidden');
+      });
+
+      els.closePluginModalBtn.addEventListener('click', () => {
+        els.pluginModalBackdrop.classList.add('hidden');
+      });
+
+      els.pluginModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === els.pluginModalBackdrop) {
+          els.pluginModalBackdrop.classList.add('hidden');
+        }
+      });
+
+      // モーダル内タブ切替
+      document.querySelectorAll('.plugin-modal-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchPluginModalTab(btn.getAttribute('data-tab'));
+        });
+      });
+
+      // すべてON・初期状態リセット
+      const handleEnableAll = () => {
+        pluginManager.enableAll();
+        renderPluginUI();
+        if (!els.resultSection.classList.contains('hidden')) renderReadingResults();
+        showToast('すべての占いプラグインをONにしました', '✨');
+      };
+      els.enableAllPluginsBtn.addEventListener('click', handleEnableAll);
+      els.quickEnableAllBtn.addEventListener('click', handleEnableAll);
+
+      els.resetDefaultPluginsBtn.addEventListener('click', () => {
+        pluginManager.resetDefaults();
+        renderPluginUI();
+        if (!els.resultSection.classList.contains('hidden')) renderReadingResults();
+        showToast('プラグインを初期状態にリセットしました', '🔄');
+      });
+
+      // プリセット入力ボタン（新規プラグイン作成タブ）
+      document.querySelectorAll('.preset-plugin-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-preset');
+          const p = PLUGIN_PRESETS[key];
+          if (!p) return;
+          document.getElementById('cpEditId').value = '';
+          document.getElementById('cpIcon').value = p.icon;
+          document.getElementById('cpName').value = p.name;
+          document.getElementById('cpColorTheme').value = p.colorTheme;
+          document.getElementById('cpDescription').value = p.description;
+          document.getElementById('cpPrimaryFeature').value = p.primaryFeature;
+          document.getElementById('cpBaseScore').value = p.baseScore;
+          document.getElementById('cpKeywords').value = p.keywords.join(', ');
+          document.getElementById('cpAxis1').value = p.axes[0];
+          document.getElementById('cpAxis2').value = p.axes[1];
+          document.getElementById('cpAxis3').value = p.axes[2];
+          document.getElementById('cpMsgHigh').value = p.msgHigh;
+          document.getElementById('cpMsgMid').value = p.msgMid;
+          document.getElementById('cpMsgLow').value = p.msgLow;
+          document.getElementById('cpLuckyItems').value = p.luckyItems;
+          showToast(`「${p.name}」のテンプレートを読み込みました`, '💡');
+        });
+      });
+
+      // カスタムプラグイン保存フォーム送信
+      els.customPluginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const existingId = document.getElementById('cpEditId').value;
+        const newPlugin = {
+          id: existingId || `custom_plugin_${Date.now()}`,
+          name: document.getElementById('cpName').value.trim(),
+          icon: document.getElementById('cpIcon').value.trim() || '🌟',
+          colorTheme: document.getElementById('cpColorTheme').value,
+          builtIn: false,
+          enabled: true,
+          description: document.getElementById('cpDescription').value.trim(),
+          primaryFeature: document.getElementById('cpPrimaryFeature').value,
+          baseScore: Number(document.getElementById('cpBaseScore').value) || 70,
+          keywords: document.getElementById('cpKeywords').value.split(',').map(s => s.trim()).filter(Boolean),
+          axes: [
+            document.getElementById('cpAxis1').value.trim() || '評価軸1',
+            document.getElementById('cpAxis2').value.trim() || '評価軸2',
+            document.getElementById('cpAxis3').value.trim() || '評価軸3'
+          ],
+          messages: {
+            high: document.getElementById('cpMsgHigh').value.trim(),
+            mid: document.getElementById('cpMsgMid').value.trim(),
+            low: document.getElementById('cpMsgLow').value.trim()
+          },
+          luckyItems: document.getElementById('cpLuckyItems').value.split(',').map(s => s.trim()).filter(Boolean)
+        };
+
+        pluginManager.upsertPlugin(newPlugin);
+        renderPluginUI();
+        if (!els.resultSection.classList.contains('hidden') && state.lastPalmMetrics) {
+          renderReadingResults();
+        }
+        switchPluginModalTab('list');
+        showToast(`カスタムプラグイン「${newPlugin.name}」を保存・有効化しました！`, '🎉');
+      });
+
+      document.getElementById('cancelEditPluginBtn').addEventListener('click', () => {
+        els.customPluginForm.reset();
+        document.getElementById('cpEditId').value = '';
+      });
+
+      // JSONコピー＆インポート
+      els.copyPluginJsonBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(els.pluginJsonTextarea.value);
+          showToast('プラグイン定義JSONをコピーしました', '📋');
+        } catch {
+          showToast('コピーに失敗しました。手動で選択してコピーしてください', '⚠️');
+        }
+      });
+
+      els.importPluginJsonBtn.addEventListener('click', () => {
+        try {
+          const parsed = JSON.parse(els.pluginJsonTextarea.value);
+          if (!Array.isArray(parsed)) throw new Error('配列形式ではありません');
+          pluginManager.plugins = parsed;
+          pluginManager.save();
+          renderPluginUI();
+          if (!els.resultSection.classList.contains('hidden') && state.lastPalmMetrics) {
+            renderReadingResults();
+          }
+          switchPluginModalTab('list');
+          showToast(`${parsed.length}件のプラグイン定義をインポートしました`, '📥');
+        } catch (err) {
+          showToast('JSONの形式が正しくありません: ' + err.message, '⚠️');
+        }
+      });
+
+      // 画像アップロード・カメラ・サンプル生成
+      els.palmFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          loadUploadedFile(e.target.files[0]);
+        }
+      });
+
+      els.startCameraBtn.addEventListener('click', startCamera);
+      els.capturePhotoBtn.addEventListener('click', captureFromCamera);
+      els.switchCameraBtn.addEventListener('click', () => {
+        state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+        startCamera();
+      });
+      els.closeCameraBtn.addEventListener('click', () => {
+        stopCameraStream();
+        if (state.hasImage) {
+          els.palmCanvas.classList.remove('hidden');
+        } else {
+          els.emptyStagePlaceholder.classList.remove('hidden');
+        }
+      });
+
+      els.generateSamplePalmBtn.addEventListener('click', generateMysticSamplePalm);
+
+      // 相談内容サンプルのワンクリック自動入力
+      document.querySelectorAll('.sample-fill-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const type = btn.getAttribute('data-sample');
+          els.enablePersonalizeMasterChk.checked = true;
+          els.chkUseName.checked = true;
+          els.chkUseBirthDate.checked = true;
+          els.chkUseHistory.checked = true;
+          els.chkUseConcern.checked = true;
+          updatePersonalizeToggleState();
+
+          if (type === 'pet') {
+            els.userNameInput.value = '星野 雫';
+            els.birthDateInput.value = '1994-05-14';
+            els.userHistoryInput.value = '2年前から保護猫（ミケ）と暮らしており、リモートワーク中心の生活。';
+            els.userConcernInput.value = 'うちの子（猫）との心の絆や健康運、これから先も穏やかに暮らせるか知りたい。';
+          } else if (type === 'wealth') {
+            els.userNameInput.value = '天城 蓮';
+            els.birthDateInput.value = '1989-11-08';
+            els.userHistoryInput.value = 'ITエンジニアとして勤務しながら、昨年から少額の積立投資と副業を開始。';
+            els.userConcernInput.value = '今後の金運・資産形成の流れと、自己投資や副業収入が伸びるタイミングを占いたい。';
+          } else if (type === 'career') {
+            els.userNameInput.value = '神崎 葵';
+            els.birthDateInput.value = '1996-03-21';
+            els.userHistoryInput.value = 'Webデザイナーとして5年勤務。チームリーダーを任されるようになった。';
+            els.userConcernInput.value = 'このまま現職で昇進を目指すべきか、フリーランスとして独立・転職すべきかキャリアの転機を知りたい。';
+          }
+          showToast('相談サンプルを自動入力しました！', '🔮');
+        });
+      });
+
+      // AI手相鑑定開始・再計算・画像ダウンロード
+      els.startReadingBtn.addEventListener('click', runFullScanAndReading);
+      els.recalculatePluginsBtn.addEventListener('click', () => {
+        if (state.lastPalmMetrics) {
+          renderReadingResults();
+          showToast('最新のチェック状態＆プラグイン構成で鑑定結果を更新しました', '🔄');
+        }
+      });
+      els.downloadResultImgBtn.addEventListener('click', downloadReadingResultImage);
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

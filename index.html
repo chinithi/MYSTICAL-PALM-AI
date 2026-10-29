@@ -181,8 +181,8 @@
           <!-- 取り込み済み・解析用Canvas -->
           <canvas id="palmCanvas" class="hidden w-full h-full object-contain bg-mystic-950"></canvas>
 
-          <!-- AI解析用オーバーレイCanvas（手相ライン・キーポイント描画） -->
-          <canvas id="overlayCanvas" class="hidden absolute inset-0 w-full h-full object-contain pointer-events-none z-10"></canvas>
+          <!-- AI解析用オーバーレイCanvas（手相ライン・キーポイント描画・ドラッグ微調整対応） -->
+          <canvas id="overlayCanvas" class="hidden absolute inset-0 w-full h-full object-contain z-10 touch-none cursor-grab active:cursor-grabbing"></canvas>
 
           <!-- スキャン中レーザー＆ステータスオーバーレイ -->
           <div id="scanAnimationOverlay" class="hidden absolute inset-0 bg-indigo-950/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-between p-5">
@@ -246,26 +246,54 @@
           </button>
         </div>
 
-        <!-- 利き手・鑑定対象の手の選択 ＆ 撮影後画像の上下反転ボタン -->
-        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-purple-500/20 text-xs">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-purple-200/80">鑑定する手：</span>
-            <div class="flex gap-1.5">
-              <label class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
-                <input type="radio" name="palmHandSide" value="right" checked class="accent-amber-400" />
-                <span>右手（現在・未来）</span>
-              </label>
-              <label class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
-                <input type="radio" name="palmHandSide" value="left" class="accent-amber-400" />
-                <span>左手（先天・潜在）</span>
-              </label>
+        <!-- 利き手・鑑定対象の手の選択 ＆ 撮影後画像の上下反転・筋検出コントロール -->
+        <div class="space-y-2.5 pt-2 border-t border-purple-500/20 text-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-purple-200/80">鑑定する手：</span>
+              <div class="flex gap-1.5">
+                <label class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
+                  <input type="radio" name="palmHandSide" value="right" checked class="accent-amber-400" />
+                  <span>右手（現在・未来）</span>
+                </label>
+                <label class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
+                  <input type="radio" name="palmHandSide" value="left" class="accent-amber-400" />
+                  <span>左手（先天・潜在）</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <button id="flipCanvasHorizontalBtn" type="button"
+                class="px-2.5 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-100 border border-purple-400/30 text-xs font-medium flex items-center gap-1 transition"
+                title="左右の向き（親指の位置）を反転します">
+                <span>↔️</span><span>左右反転</span>
+              </button>
+              <button id="flipCanvasVerticalBtn" type="button"
+                class="px-2.5 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-amber-200 border border-amber-400/30 text-xs font-medium flex items-center gap-1 transition"
+                title="相手の手相を対面で撮ったときなどに上下を反転します">
+                <span>🔃</span><span>上下反転</span>
+              </button>
             </div>
           </div>
 
-          <button id="flipCanvasVerticalBtn" type="button"
-            class="px-3 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-amber-200 border border-amber-400/30 text-xs font-medium flex items-center gap-1 transition">
-            <span>🔃</span><span>画像を上下反転</span>
-          </button>
+          <!-- 手の筋（しわ）認識設定バー -->
+          <div class="flex flex-wrap items-center justify-between gap-3 px-3 py-2 rounded-xl bg-mystic-950/80 border border-purple-500/25">
+            <label class="cursor-pointer inline-flex items-center gap-2 text-amber-200 select-none">
+              <input id="chkShowRawCreases" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer" />
+              <span>🔍 実測した手の筋（しわ溝ピクセル）を強調表示</span>
+            </label>
+
+            <div class="flex items-center gap-2">
+              <label for="creaseSensitivitySlider" class="text-[11px] text-purple-300">筋の検出感度:</label>
+              <input id="creaseSensitivitySlider" type="range" min="1" max="100" value="62"
+                class="w-24 sm:w-28 accent-amber-400 cursor-pointer" />
+              <span id="creaseSensitivityVal" class="text-[11px] font-mono text-amber-300 w-7">62%</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-purple-300/75">
+            💡 解析後、画像上の白いポイント（●）を指やマウスでドラッグすると、手相の筋に合わせてライン位置を手動微調整できます。
+          </p>
         </div>
       </section>
 
@@ -1066,6 +1094,9 @@
       facingMode: 'environment',
       cameraFlipVertical: false,
       lastPalmMetrics: null,
+      tracedLines: null,
+      rawCreaseGrid: null,
+      draggingPoint: null,
       sampleSeedCounter: 1
     };
 
@@ -1115,6 +1146,10 @@
       flipCameraVerticalBtn: document.getElementById('flipCameraVerticalBtn'),
       flipCameraVerticalLabel: document.getElementById('flipCameraVerticalLabel'),
       flipCanvasVerticalBtn: document.getElementById('flipCanvasVerticalBtn'),
+      flipCanvasHorizontalBtn: document.getElementById('flipCanvasHorizontalBtn'),
+      chkShowRawCreases: document.getElementById('chkShowRawCreases'),
+      creaseSensitivitySlider: document.getElementById('creaseSensitivitySlider'),
+      creaseSensitivityVal: document.getElementById('creaseSensitivityVal'),
       switchCameraBtn: document.getElementById('switchCameraBtn'),
       closeCameraBtn: document.getElementById('closeCameraBtn'),
       generateSamplePalmBtn: document.getElementById('generateSamplePalmBtn'),
@@ -1435,6 +1470,38 @@
       showToast('手のひら画像を上下反転しました！', '🔃');
     }
 
+    function flipCurrentCanvasHorizontally() {
+      if (!state.hasImage) {
+        showToast('先にカメラ撮影または写真をアップロードしてください', 'ℹ️');
+        return;
+      }
+      const canvas = els.palmCanvas;
+      const w = canvas.width;
+      const h = canvas.height;
+      if (!w || !h) return;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = w;
+      tempCanvas.height = h;
+      tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.clearRect(0, 0, w, h);
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+
+      if (!els.resultSection.classList.contains('hidden')) {
+        state.lastPalmMetrics = analyzePalmCanvasAndDrawOverlay();
+        renderReadingResults();
+      } else {
+        els.overlayCanvas.classList.add('hidden');
+      }
+      showToast('手のひら画像を左右反転しました！', '↔️');
+    }
+
     async function startCamera() {
       stopCameraStream();
       try {
@@ -1618,113 +1685,512 @@
     }
 
     /********************************************************************
-     * 8. 画像ピクセル解析＆オーバーレイ手相ライン描画
+     * 8. 手の筋（しわ溝）バレー検出 ＆ 動的経路探索（Viterbi）手相トラッキング
      ********************************************************************/
     function analyzePalmCanvasAndDrawOverlay() {
       const srcCanvas = els.palmCanvas;
       const w = srcCanvas.width || 800;
       const h = srcCanvas.height || 600;
-      const ctx = srcCanvas.getContext('2d');
 
-      const sampleW = Math.max(40, Math.floor(w * 0.5));
-      const sampleH = Math.max(40, Math.floor(h * 0.5));
-      const startX = Math.floor((w - sampleW) / 2);
-      const startY = Math.floor((h - sampleH) / 2);
-      const imgData = ctx.getImageData(startX, startY, sampleW, sampleH).data;
+      // 解析用ワーキンググリッド (高速かつ精密に手の筋の溝を抽出する解像度)
+      const GW = 240;
+      const GH = Math.max(160, Math.round((GW * h) / w));
+      const workCanvas = document.createElement('canvas');
+      workCanvas.width = GW;
+      workCanvas.height = GH;
+      const wctx = workCanvas.getContext('2d');
+      wctx.drawImage(srcCanvas, 0, 0, GW, GH);
+      const rgba = wctx.getImageData(0, 0, GW, GH).data;
 
-      let sumR = 0, sumG = 0, sumB = 0;
-      let edgeAccumulator = 0;
-      const step = 16;
-      let count = 0;
+      const lum = new Float32Array(GW * GH);
+      const cbArr = new Float32Array(GW * GH);
+      const crArr = new Float32Array(GW * GH);
 
-      for (let i = 0; i < imgData.length - step; i += step) {
-        const r = imgData[i];
-        const g = imgData[i + 1];
-        const b = imgData[i + 2];
-        const nextR = imgData[i + 4];
-        sumR += r;
-        sumG += g;
-        sumB += b;
-        edgeAccumulator += Math.abs(r - nextR);
-        count++;
+      // 1. 中央領域の色統計をサンプリングして適応的な肌色モデルを構築
+      let sumR = 0, sumG = 0, sumB = 0, sumCb = 0, sumCr = 0, sumLum = 0, centerCount = 0;
+      const cx0 = Math.floor(GW * 0.33), cx1 = Math.floor(GW * 0.67);
+      const cy0 = Math.floor(GH * 0.35), cy1 = Math.floor(GH * 0.75);
+
+      for (let y = 0; y < GH; y++) {
+        for (let x = 0; x < GW; x++) {
+          const idx = y * GW + x;
+          const p = idx * 4;
+          const r = rgba[p], g = rgba[p + 1], b = rgba[p + 2];
+          const l = 0.299 * r + 0.587 * g + 0.114 * b;
+          const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+          const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+          lum[idx] = l;
+          cbArr[idx] = cb;
+          crArr[idx] = cr;
+
+          if (x >= cx0 && x <= cx1 && y >= cy0 && y <= cy1) {
+            sumR += r; sumG += g; sumB += b;
+            sumCb += cb; sumCr += cr; sumLum += l;
+            centerCount++;
+          }
+        }
       }
 
-      const avgR = Math.round(sumR / Math.max(1, count));
-      const avgG = Math.round(sumG / Math.max(1, count));
-      const avgB = Math.round(sumB / Math.max(1, count));
-      const avgEdge = edgeAccumulator / Math.max(1, count);
+      const avgR = Math.round(sumR / Math.max(1, centerCount));
+      const avgG = Math.round(sumG / Math.max(1, centerCount));
+      const avgB = Math.round(sumB / Math.max(1, centerCount));
+      const meanCb = sumCb / Math.max(1, centerCount);
+      const meanCr = sumCr / Math.max(1, centerCount);
+      const meanLum = sumLum / Math.max(1, centerCount);
 
-      const seed = (avgR * 7 + avgG * 13 + avgB * 17 + Math.round(avgEdge * 23)) % 1000;
+      // 2. 手のひら肌領域マスクと輪郭除外（内部マスク）の構築
+      const skinMask = new Uint8Array(GW * GH);
+      for (let y = 0; y < GH; y++) {
+        for (let x = 0; x < GW; x++) {
+          const idx = y * GW + x;
+          const l = lum[idx];
+          const dCb = Math.abs(cbArr[idx] - meanCb);
+          const dCr = Math.abs(crArr[idx] - meanCr);
+          const dLum = Math.abs(l - meanLum);
+          const isStandardSkin = (crArr[idx] > 130 && crArr[idx] < 180 && cbArr[idx] > 75 && cbArr[idx] < 138);
+          const isAdaptiveSkin = (dCb < 26 && dCr < 28 && dLum < 95 && l > 28 && l < 248);
+          if (isStandardSkin || isAdaptiveSkin) {
+            skinMask[idx] = 1;
+          }
+        }
+      }
 
-      const vitalityScore = 72 + ((avgR + seed) % 25);
-      const intellectScore = 70 + ((avgG + Math.round(avgEdge * 3) + seed) % 27);
-      const emotionScore = 73 + ((avgB + avgR + seed) % 24);
-      const fortuneScore = 71 + ((avgR + avgG + avgB + seed) % 26);
+      // 外周（手の輪郭線や指の隙間）を誤検出しないよう内側にエロード（収縮）したマスクを作成
+      const interiorMask = new Uint8Array(GW * GH);
+      const erodeR = Math.max(4, Math.round(GW * 0.038));
+      let minX = GW, maxX = 0, minY = GH, maxY = 0, validPixels = 0;
 
+      for (let y = Math.floor(GH * 0.18); y < Math.floor(GH * 0.90); y++) {
+        for (let x = Math.floor(GW * 0.12); x < Math.floor(GW * 0.88); x++) {
+          const idx = y * GW + x;
+          if (!skinMask[idx]) continue;
+          let allSkin = true;
+          for (let dy = -erodeR; dy <= erodeR; dy += 2) {
+            for (let dx = -erodeR; dx <= erodeR; dx += 2) {
+              const nx = x + dx, ny = y + dy;
+              if (nx < 0 || nx >= GW || ny < 0 || ny >= GH || !skinMask[ny * GW + nx]) {
+                allSkin = false;
+                break;
+              }
+            }
+            if (!allSkin) break;
+          }
+          if (allSkin) {
+            interiorMask[idx] = 1;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            validPixels++;
+          }
+        }
+      }
+
+      // 万が一背景と肌のコントラストが特殊でマスクが小さすぎる場合は安全な中央楕円領域にフォールバック
+      if (validPixels < GW * GH * 0.08) {
+        minX = Math.floor(GW * 0.24);
+        maxX = Math.floor(GW * 0.76);
+        minY = Math.floor(GH * 0.28);
+        maxY = Math.floor(GH * 0.85);
+        for (let y = minY; y <= maxY; y++) {
+          for (let x = minX; x <= maxX; x++) {
+            const nx = (x - GW * 0.5) / (GW * 0.27);
+            const ny = (y - GH * 0.57) / (GH * 0.30);
+            if (nx * nx + ny * ny <= 1.0) {
+              interiorMask[y * GW + x] = 1;
+            }
+          }
+        }
+      }
+
+      // 掌の中心エリア（指領域を除いた手のひら本体）のバウンディングボックス
+      const palmWidth = Math.max(40, maxX - minX);
+      const palmHeight = Math.max(40, maxY - minY);
+      const palmTop = Math.min(maxY - 30, minY + Math.round(palmHeight * 0.18));
+      const palmBottom = maxY;
+
+      // 3. 3x3平滑化＋マルチスケール方向別バレー（暗い溝＝手の筋）検出フィルタ
+      const smoothLum = new Float32Array(GW * GH);
+      for (let y = 1; y < GH - 1; y++) {
+        for (let x = 1; x < GW - 1; x++) {
+          const i = y * GW + x;
+          smoothLum[i] = (
+            lum[i - GW - 1] + 2 * lum[i - GW] + lum[i - GW + 1] +
+            2 * lum[i - 1] + 4 * lum[i] + 2 * lum[i + 1] +
+            lum[i + GW - 1] + 2 * lum[i + GW] + lum[i + GW + 1]
+          ) / 16;
+        }
+      }
+
+      const creaseTotal = new Float32Array(GW * GH);
+      const creaseHoriz = new Float32Array(GW * GH); // 横・斜め筋（感情線・知能線向き）
+      const creaseVert = new Float32Array(GW * GH);  // 縦・カーブ筋（生命線・運命線向き）
+      const positiveVals = [];
+
+      // 4つの方向ベクトル: [沿う方向(ax, ay), 法線方向(nx, ny)]
+      const dirs = [
+        { ax: 1, ay: 0, nx: 0, ny: 1, type: 'h' },   // 横筋 (─)
+        { ax: 0, ay: 1, nx: 1, ny: 0, type: 'v' },   // 縦筋 (│)
+        { ax: 1, ay: 1, nx: -1, ny: 1, type: 'hv' }, // 右下がり斜め筋 (＼)
+        { ax: 1, ay: -1, nx: 1, ny: 1, type: 'hv' }  // 右上がり斜め筋 (／)
+      ];
+      const scales = [2, 4, 6];
+
+      for (let y = 7; y < GH - 7; y++) {
+        for (let x = 7; x < GW - 7; x++) {
+          const idx = y * GW + x;
+          if (!interiorMask[idx]) continue;
+
+          const c = smoothLum[idx];
+          let bestAll = 0, bestH = 0, bestV = 0;
+
+          for (let dIdx = 0; dIdx < dirs.length; dIdx++) {
+            const dir = dirs[dIdx];
+            const a1 = smoothLum[(y + dir.ay * 2) * GW + (x + dir.ax * 2)];
+            const a2 = smoothLum[(y - dir.ay * 2) * GW + (x - dir.ax * 2)];
+            const alongDiff = (Math.abs(a1 - c) + Math.abs(a2 - c)) * 0.22;
+
+            for (let sIdx = 0; sIdx < scales.length; sIdx++) {
+              const s = scales[sIdx];
+              const s1 = smoothLum[(y + dir.ny * s) * GW + (x + dir.nx * s)];
+              const s2 = smoothLum[(y - dir.ny * s) * GW + (x - dir.nx * s)];
+              // 両側とも中心より明るい「溝（しわ）」であるほど強く反応させる
+              const minSide = Math.min(s1, s2);
+              const avgSide = 0.5 * (s1 + s2);
+              if (avgSide > c) {
+                const valley = Math.max(0, minSide - c) * 1.15 + Math.max(0, avgSide - c) * 0.55 - alongDiff;
+                if (valley > bestAll) bestAll = valley;
+                if ((dir.type === 'h' || dir.type === 'hv') && valley > bestH) bestH = valley;
+                if ((dir.type === 'v' || dir.type === 'hv') && valley > bestV) bestV = valley;
+              }
+            }
+          }
+
+          if (bestAll > 0.4) {
+            creaseTotal[idx] = bestAll;
+            creaseHoriz[idx] = bestH;
+            creaseVert[idx] = bestV;
+            positiveVals.push(bestAll);
+          }
+        }
+      }
+
+      // パーセンタイル正規化（薄い手相でも濃い手相でも0〜1に自動スケーリング）
+      positiveVals.sort((a, b) => a - b);
+      const p96 = positiveVals.length > 20 ? positiveVals[Math.floor(positiveVals.length * 0.96)] : 8.0;
+      const normFactor = Math.max(2.5, p96);
+
+      const normCrease = new Float32Array(GW * GH);
+      let totalCreaseEnergy = 0;
+      for (let i = 0; i < GW * GH; i++) {
+        if (creaseTotal[i] > 0) {
+          normCrease[i] = Math.min(1.0, creaseTotal[i] / normFactor);
+          creaseHoriz[i] = Math.min(1.0, creaseHoriz[i] / normFactor);
+          creaseVert[i] = Math.min(1.0, creaseVert[i] / normFactor);
+          totalCreaseEnergy += normCrease[i];
+        }
+      }
+
+      // 4. 親指側（左側 or 右側）の自動判定（生命線＋知能線の合流点の強さ＆手選択）
+      const handSideEl = document.querySelector('input[name="palmHandSide"]:checked');
+      const selectedHandSide = handSideEl ? handSideEl.value : 'right';
+
+      let leftSideCreaseSum = 0, rightSideCreaseSum = 0;
+      const midX = Math.round((minX + maxX) * 0.5);
+      for (let y = palmTop + Math.round((palmBottom - palmTop) * 0.15); y < palmTop + Math.round((palmBottom - palmTop) * 0.65); y++) {
+        for (let x = minX; x < maxX; x++) {
+          const val = normCrease[y * GW + x];
+          if (x < midX) leftSideCreaseSum += val;
+          else rightSideCreaseSum += val;
+        }
+      }
+      // 基本的には手のひら正面撮影では右手＝左側に親指、左手＝右側に親指。ただし画像内の筋の偏りが極端に反対の場合は自動補正
+      let thumbOnLeft = (selectedHandSide === 'right');
+      if (leftSideCreaseSum > rightSideCreaseSum * 1.45) thumbOnLeft = true;
+      else if (rightSideCreaseSum > leftSideCreaseSum * 1.45) thumbOnLeft = false;
+
+      // 5. Viterbi 動的計画法による「実際の暗い筋（しわ）」に沿った4大ラインのトラッキング
+      const traceViterbiLine = (refPointFn, normVecFn, energyGrid, searchRadius, steps = 26) => {
+        const W_LEN = searchRadius * 2 + 1;
+        const dp = Array.from({ length: steps }, () => new Float32Array(W_LEN).fill(-1e9));
+        const back = Array.from({ length: steps }, () => new Int16Array(W_LEN).fill(0));
+        const coords = Array.from({ length: steps }, () => new Array(W_LEN));
+
+        for (let s = 0; s < steps; s++) {
+          const t = s / (steps - 1);
+          const ref = refPointFn(t);
+          const nvec = normVecFn(t);
+
+          for (let wi = 0; wi < W_LEN; wi++) {
+            const offset = wi - searchRadius;
+            const px = Math.max(2, Math.min(GW - 3, Math.round(ref.x + nvec.nx * offset)));
+            const py = Math.max(2, Math.min(GH - 3, Math.round(ref.y + nvec.ny * offset)));
+            coords[s][wi] = { x: px, y: py };
+
+            // 周囲3x3の最大筋エネルギーを取得してしっかり溝に吸着させる
+            let localCrease = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const v = energyGrid[(py + dy) * GW + (px + dx)];
+                if (v > localCrease) localCrease = v;
+              }
+            }
+
+            // 強い筋（溝）がある場所を高く評価し、中心から離れすぎない緩やかな事前分布を持たせる
+            const priorPenalty = (offset * offset) / (searchRadius * searchRadius) * 0.28;
+            const nodeScore = localCrease * 3.8 - priorPenalty;
+
+            if (s === 0) {
+              dp[0][wi] = nodeScore;
+            } else {
+              let bestPrev = -1e9;
+              let bestPrevIdx = wi;
+              for (let d = -3; d <= 3; d++) {
+                const pwi = wi + d;
+                if (pwi < 0 || pwi >= W_LEN) continue;
+                const stepPenalty = (d * d) * 0.14;
+                const cand = dp[s - 1][pwi] + nodeScore - stepPenalty;
+                if (cand > bestPrev) {
+                  bestPrev = cand;
+                  bestPrevIdx = pwi;
+                }
+              }
+              dp[s][wi] = bestPrev;
+              back[s][wi] = bestPrevIdx;
+            }
+          }
+        }
+
+        // 終端からバックトラック
+        let bestEndIdx = searchRadius;
+        let maxEndScore = -1e9;
+        for (let wi = 0; wi < W_LEN; wi++) {
+          if (dp[steps - 1][wi] > maxEndScore) {
+            maxEndScore = dp[steps - 1][wi];
+            bestEndIdx = wi;
+          }
+        }
+
+        const rawPath = new Array(steps);
+        let cur = bestEndIdx;
+        let sumStrength = 0;
+        for (let s = steps - 1; s >= 0; s--) {
+          const pt = coords[s][cur];
+          rawPath[s] = { x: pt.x / GW, y: pt.y / GH };
+          sumStrength += energyGrid[pt.y * GW + pt.x];
+          cur = back[s][cur];
+        }
+
+        // パスを平滑化して7個の主要制御点に集約（ドラッグ微調整も可能に）
+        const smoothed = rawPath.map((pt, i) => {
+          let sx = 0, sy = 0, cnt = 0;
+          for (let k = -2; k <= 2; k++) {
+            const j = Math.max(0, Math.min(steps - 1, i + k));
+            sx += rawPath[j].x;
+            sy += rawPath[j].y;
+            cnt++;
+          }
+          return { x: sx / cnt, y: sy / cnt };
+        });
+
+        const keyIndices = [0, 4, 8, 13, 17, 21, steps - 1];
+        const controlPoints = keyIndices.map(idx => smoothed[idx]);
+        const avgStrength = sumStrength / steps;
+
+        return { controlPoints, avgStrength };
+      };
+
+      const pLeft = minX + palmWidth * 0.06;
+      const pRight = maxX - palmWidth * 0.06;
+      const pSpanX = pRight - pLeft;
+      const pSpanY = palmBottom - palmTop;
+
+      const mapX = (relX) => thumbOnLeft ? (pLeft + relX * pSpanX) : (pRight - relX * pSpanX);
+      const mapY = (relY) => palmTop + relY * pSpanY;
+      const flipNx = (nx) => thumbOnLeft ? nx : -nx;
+
+      const searchRad = Math.max(10, Math.round(palmWidth * 0.12));
+
+      // ① 生命線 (Life Line): 親指と人差し指の間から金星丘を囲んで手首へ弧を描く筋
+      const lifeTrace = traceViterbiLine(
+        (t) => ({
+          x: mapX(0.14 + 0.34 * Math.sin(t * Math.PI * 0.72)),
+          y: mapY(0.24 + 0.64 * t)
+        }),
+        () => ({ nx: flipNx(0.85), ny: -0.35 }),
+        creaseVert,
+        searchRad
+      );
+
+      // ② 知能線 (Head Line): 生命線の起点付近から掌の中央を横切る筋
+      const headTrace = traceViterbiLine(
+        (t) => ({
+          x: mapX(0.16 + 0.64 * t),
+          y: mapY(0.26 + 0.34 * Math.pow(t, 1.15))
+        }),
+        () => ({ nx: flipNx(-0.25), ny: 0.95 }),
+        creaseHoriz,
+        searchRad
+      );
+
+      // ③ 感情線 (Heart Line): 小指側の外縁から人差し指・中指の付け根へ向かう上部の横筋
+      const heartTrace = traceViterbiLine(
+        (t) => ({
+          x: mapX(0.88 - 0.60 * t),
+          y: mapY(0.26 - 0.16 * Math.pow(t, 1.1))
+        }),
+        () => ({ nx: flipNx(0.20), ny: 0.96 }),
+        creaseHoriz,
+        searchRad
+      );
+
+      // ④ 運命線 (Fate Line): 手首中央から中指の付け根へ向かって縦に伸びる筋
+      const fateTrace = traceViterbiLine(
+        (t) => ({
+          x: mapX(0.48 + 0.03 * Math.sin(t * Math.PI)),
+          y: mapY(0.84 - 0.62 * t)
+        }),
+        () => ({ nx: 1.0, ny: 0 }),
+        creaseVert,
+        Math.max(9, Math.round(searchRad * 0.85))
+      );
+
+      state.rawCreaseGrid = { GW, GH, normCrease, interiorMask };
+      state.tracedLines = [
+        { id: 'life', label: '生命線', color: '#34d399', pts: lifeTrace.controlPoints, strength: lifeTrace.avgStrength },
+        { id: 'head', label: '知能線', color: '#38bdf8', pts: headTrace.controlPoints, strength: headTrace.avgStrength },
+        { id: 'heart', label: '感情線', color: '#fb7185', pts: heartTrace.controlPoints, strength: heartTrace.avgStrength },
+        { id: 'fate', label: '運命線', color: '#facc15', pts: fateTrace.controlPoints, strength: fateTrace.avgStrength }
+      ];
+
+      // 実測された各筋の深さ・鮮明度から4大スコアを算出
+      const seed = (avgR * 7 + avgG * 13 + avgB * 17 + Math.round(totalCreaseEnergy)) % 1000;
+      const toLineScore = (strength, baseOffset) => {
+        return Math.max(68, Math.min(98, Math.round(70 + strength * 34 + (seed % 7) + baseOffset)));
+      };
+
+      const vitalityScore = toLineScore(lifeTrace.avgStrength, 2);
+      const intellectScore = toLineScore(headTrace.avgStrength, 1);
+      const emotionScore = toLineScore(heartTrace.avgStrength, 2);
+      const fortuneScore = toLineScore(fateTrace.avgStrength, 0);
+
+      const snapshotDataUrl = renderOverlayAndBuildSnapshot();
+
+      return {
+        seed,
+        vitalityScore,
+        intellectScore,
+        emotionScore,
+        fortuneScore,
+        avgWarmth: avgR,
+        contrastIndex: Math.round(normFactor * 10) / 10,
+        snapshotDataUrl
+      };
+    }
+
+    /**
+     * 実測された手の筋（しわピクセル）＋4大主要手相ラインをオーバーレイ描画し、合成スナップショットを返す
+     */
+    function renderOverlayAndBuildSnapshot() {
+      const srcCanvas = els.palmCanvas;
+      const w = srcCanvas.width || 800;
+      const h = srcCanvas.height || 600;
       const ov = els.overlayCanvas;
       ov.width = w;
       ov.height = h;
       const octx = ov.getContext('2d');
       octx.clearRect(0, 0, w, h);
 
-      const shiftX = ((seed % 11) - 5) * 0.004;
-      const shiftY = (((seed >> 2) % 11) - 5) * 0.004;
+      // レイヤー1: 実測した手の筋（しわ溝ピクセル）のダイレクト強調表示
+      if (els.chkShowRawCreases && els.chkShowRawCreases.checked && state.rawCreaseGrid) {
+        const { GW, GH, normCrease, interiorMask } = state.rawCreaseGrid;
+        const sens = Number(els.creaseSensitivitySlider ? els.creaseSensitivitySlider.value : 62);
+        // 感度が高いほど薄い筋まで表示 (threshold: 0.14 〜 0.58)
+        const threshold = 0.62 - (sens / 100) * 0.48;
 
-      const drawGlowingCurve = (pts, color, label) => {
+        const creaseCanvas = document.createElement('canvas');
+        creaseCanvas.width = GW;
+        creaseCanvas.height = GH;
+        const cctx = creaseCanvas.getContext('2d');
+        const cImg = cctx.createImageData(GW, GH);
+        const cData = cImg.data;
+
+        for (let i = 0; i < GW * GH; i++) {
+          if (!interiorMask[i]) continue;
+          const v = normCrease[i];
+          if (v > threshold) {
+            const intensity = Math.min(1, (v - threshold) / (1 - threshold + 0.01));
+            const p = i * 4;
+            // ゴールド〜シアンの神秘的な溝ハイライト
+            cData[p] = 250;
+            cData[p + 1] = 215;
+            cData[p + 2] = 105;
+            cData[p + 3] = Math.round(intensity * 195);
+          }
+        }
+        cctx.putImageData(cImg, 0, 0);
+
         octx.save();
-        octx.strokeStyle = color;
-        octx.shadowColor = color;
-        octx.shadowBlur = 12;
-        octx.lineWidth = Math.max(3, w * 0.0055);
-        octx.lineCap = 'round';
-        octx.beginPath();
-        octx.moveTo(pts[0].x * w, pts[0].y * h);
-        octx.quadraticCurveTo(pts[1].x * w, pts[1].y * h, pts[2].x * w, pts[2].y * h);
-        octx.stroke();
-
-        pts.forEach(pt => {
-          octx.fillStyle = '#ffffff';
-          octx.beginPath();
-          octx.arc(pt.x * w, pt.y * h, Math.max(3.5, w * 0.006), 0, Math.PI * 2);
-          octx.fill();
-        });
-
-        const mid = pts[1];
-        octx.font = `bold ${Math.max(11, Math.round(w * 0.017))}px "Noto Sans JP", sans-serif`;
-        const textW = octx.measureText(label).width;
-        octx.fillStyle = 'rgba(10, 8, 22, 0.82)';
-        octx.fillRect(mid.x * w - 6, mid.y * h - 18, textW + 12, 22);
-        octx.strokeStyle = color;
-        octx.lineWidth = 1;
-        octx.strokeRect(mid.x * w - 6, mid.y * h - 18, textW + 12, 22);
-        octx.fillStyle = color;
-        octx.fillText(label, mid.x * w, mid.y * h - 3);
+        octx.imageSmoothingEnabled = true;
+        octx.drawImage(creaseCanvas, 0, 0, w, h);
         octx.restore();
-      };
+      }
 
-      drawGlowingCurve([
-        { x: 0.36 + shiftX, y: 0.49 + shiftY },
-        { x: 0.46 + shiftX, y: 0.61 + shiftY },
-        { x: 0.44 + shiftX, y: 0.81 + shiftY }
-      ], '#34d399', '生命線');
+      // レイヤー2: 動的経路探索された4大手相ライン＋ドラッグ微調整用キーポイント
+      if (state.tracedLines) {
+        state.tracedLines.forEach(line => {
+          const pts = line.pts;
+          if (!pts || pts.length < 2) return;
 
-      drawGlowingCurve([
-        { x: 0.37 + shiftX, y: 0.49 + shiftY },
-        { x: 0.51 + shiftX, y: 0.55 + shiftY },
-        { x: 0.62 + shiftX, y: 0.62 + shiftY }
-      ], '#38bdf8', '知能線');
+          octx.save();
+          octx.strokeStyle = line.color;
+          octx.shadowColor = line.color;
+          octx.shadowBlur = 10;
+          octx.lineWidth = Math.max(3, w * 0.0052);
+          octx.lineCap = 'round';
+          octx.lineJoin = 'round';
 
-      drawGlowingCurve([
-        { x: 0.65 + shiftX, y: 0.50 + shiftY },
-        { x: 0.52 + shiftX, y: 0.46 + shiftY },
-        { x: 0.39 + shiftX, y: 0.41 + shiftY }
-      ], '#fb7185', '感情線');
+          // 滑らかなスプライン曲線として描画
+          octx.beginPath();
+          octx.moveTo(pts[0].x * w, pts[0].y * h);
+          for (let i = 0; i < pts.length - 1; i++) {
+            const xc = ((pts[i].x + pts[i + 1].x) * 0.5) * w;
+            const yc = ((pts[i].y + pts[i + 1].y) * 0.5) * h;
+            octx.quadraticCurveTo(pts[i].x * w, pts[i].y * h, xc, yc);
+          }
+          const last = pts[pts.length - 1];
+          octx.lineTo(last.x * w, last.y * h);
+          octx.stroke();
 
-      drawGlowingCurve([
-        { x: 0.49 + shiftX, y: 0.82 + shiftY },
-        { x: 0.50 + shiftX, y: 0.62 + shiftY },
-        { x: 0.49 + shiftX, y: 0.42 + shiftY }
-      ], '#facc15', '運命線');
+          // ドラッグ可能な制御点（●）を描画
+          pts.forEach((pt, idx) => {
+            if (idx % 2 === 0 || idx === pts.length - 1) {
+              octx.fillStyle = '#ffffff';
+              octx.strokeStyle = line.color;
+              octx.lineWidth = 2;
+              octx.beginPath();
+              octx.arc(pt.x * w, pt.y * h, Math.max(4, w * 0.0065), 0, Math.PI * 2);
+              octx.fill();
+              octx.stroke();
+            }
+          });
+
+          // ラベルバッジ描画
+          const mid = pts[Math.floor(pts.length / 2)];
+          octx.font = `bold ${Math.max(11, Math.round(w * 0.017))}px "Noto Sans JP", sans-serif`;
+          const textW = octx.measureText(line.label).width;
+          const bx = Math.max(8, Math.min(w - textW - 20, mid.x * w - 6));
+          const by = Math.max(22, Math.min(h - 10, mid.y * h - 18));
+          octx.fillStyle = 'rgba(10, 8, 22, 0.84)';
+          octx.fillRect(bx, by, textW + 12, 22);
+          octx.strokeStyle = line.color;
+          octx.lineWidth = 1.2;
+          octx.strokeRect(bx, by, textW + 12, 22);
+          octx.fillStyle = line.color;
+          octx.fillText(line.label, bx + 6, by + 15);
+          octx.restore();
+        });
+      }
 
       ov.classList.remove('hidden');
 
@@ -1734,17 +2200,7 @@
       const mctx = mergedCanvas.getContext('2d');
       mctx.drawImage(srcCanvas, 0, 0);
       mctx.drawImage(ov, 0, 0);
-
-      return {
-        seed,
-        vitalityScore,
-        intellectScore,
-        emotionScore,
-        fortuneScore,
-        avgWarmth: avgR,
-        contrastIndex: Math.round(avgEdge * 10) / 10,
-        snapshotDataUrl: mergedCanvas.toDataURL('image/png')
-      };
+      return mergedCanvas.toDataURL('image/png');
     }
 
     /********************************************************************
@@ -2185,6 +2641,110 @@
         );
       });
       els.flipCanvasVerticalBtn.addEventListener('click', flipCurrentCanvasVertically);
+      els.flipCanvasHorizontalBtn.addEventListener('click', flipCurrentCanvasHorizontally);
+
+      // 右手・左手ラジオ変更時に手相の向きを再解析
+      document.querySelectorAll('input[name="palmHandSide"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          if (state.hasImage && !els.resultSection.classList.contains('hidden')) {
+            state.lastPalmMetrics = analyzePalmCanvasAndDrawOverlay();
+            renderReadingResults();
+          }
+        });
+      });
+
+      // 実測した手の筋（しわピクセル）表示切替＆感度スライダー
+      els.chkShowRawCreases.addEventListener('change', () => {
+        if (state.lastPalmMetrics) {
+          state.lastPalmMetrics.snapshotDataUrl = renderOverlayAndBuildSnapshot();
+          els.resultPalmSnapshot.src = state.lastPalmMetrics.snapshotDataUrl;
+        }
+      });
+
+      els.creaseSensitivitySlider.addEventListener('input', (e) => {
+        els.creaseSensitivityVal.textContent = `${e.target.value}%`;
+        if (state.lastPalmMetrics) {
+          state.lastPalmMetrics.snapshotDataUrl = renderOverlayAndBuildSnapshot();
+          els.resultPalmSnapshot.src = state.lastPalmMetrics.snapshotDataUrl;
+        }
+      });
+
+      // オーバーレイCanvas上の制御点（●）ドラッグ微調整機能
+      const getCanvasRelCoords = (evt) => {
+        const rect = els.overlayCanvas.getBoundingClientRect();
+        const scaleX = els.overlayCanvas.width / Math.max(1, rect.width);
+        const scaleY = els.overlayCanvas.height / Math.max(1, rect.height);
+        // object-contain による余白を考慮
+        const imgAspect = els.overlayCanvas.width / Math.max(1, els.overlayCanvas.height);
+        const boxAspect = rect.width / Math.max(1, rect.height);
+        let renderW = rect.width, renderH = rect.height, offsetX = 0, offsetY = 0;
+        if (imgAspect > boxAspect) {
+          renderH = rect.width / imgAspect;
+          offsetY = (rect.height - renderH) * 0.5;
+        } else {
+          renderW = rect.height * imgAspect;
+          offsetX = (rect.width - renderW) * 0.5;
+        }
+        const rx = (evt.clientX - rect.left - offsetX) / Math.max(1, renderW);
+        const ry = (evt.clientY - rect.top - offsetY) / Math.max(1, renderH);
+        return {
+          x: Math.max(0.03, Math.min(0.97, rx)),
+          y: Math.max(0.03, Math.min(0.97, ry))
+        };
+      };
+
+      els.overlayCanvas.addEventListener('pointerdown', (evt) => {
+        if (!state.tracedLines) return;
+        const pos = getCanvasRelCoords(evt);
+        let bestDist = 0.055;
+        let found = null;
+        state.tracedLines.forEach((line, lIdx) => {
+          line.pts.forEach((pt, pIdx) => {
+            const d = Math.hypot(pt.x - pos.x, pt.y - pos.y);
+            if (d < bestDist) {
+              bestDist = d;
+              found = { lIdx, pIdx };
+            }
+          });
+        });
+        if (found) {
+          state.draggingPoint = found;
+          els.overlayCanvas.setPointerCapture(evt.pointerId);
+          evt.preventDefault();
+        }
+      });
+
+      els.overlayCanvas.addEventListener('pointermove', (evt) => {
+        if (!state.draggingPoint || !state.tracedLines) return;
+        const pos = getCanvasRelCoords(evt);
+        const { lIdx, pIdx } = state.draggingPoint;
+        const pts = state.tracedLines[lIdx].pts;
+        const dx = pos.x - pts[pIdx].x;
+        const dy = pos.y - pts[pIdx].y;
+        pts[pIdx] = { x: pos.x, y: pos.y };
+        // 隣接する中間点も滑らかに追従させる
+        if (pIdx > 0 && pIdx % 2 === 0) {
+          pts[pIdx - 1].x += dx * 0.5;
+          pts[pIdx - 1].y += dy * 0.5;
+        }
+        if (pIdx < pts.length - 1 && pIdx % 2 === 0) {
+          pts[pIdx + 1].x += dx * 0.5;
+          pts[pIdx + 1].y += dy * 0.5;
+        }
+        if (state.lastPalmMetrics) {
+          state.lastPalmMetrics.snapshotDataUrl = renderOverlayAndBuildSnapshot();
+          els.resultPalmSnapshot.src = state.lastPalmMetrics.snapshotDataUrl;
+        }
+      });
+
+      const endPointDrag = () => {
+        if (state.draggingPoint) {
+          state.draggingPoint = null;
+        }
+      };
+      els.overlayCanvas.addEventListener('pointerup', endPointDrag);
+      els.overlayCanvas.addEventListener('pointercancel', endPointDrag);
+
       els.switchCameraBtn.addEventListener('click', () => {
         state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
         startCamera();

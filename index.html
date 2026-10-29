@@ -173,9 +173,18 @@
 
           <!-- カメラ用ガイド枠 -->
           <div id="cameraGuideOverlay" class="hidden absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-            <div class="w-48 h-60 sm:w-56 sm:h-68 border-2 border-dashed border-amber-400/70 rounded-[40%] flex items-center justify-center shadow-[0_0_30px_rgba(229,193,88,0.25)]">
-              <span class="text-xs text-amber-200/80 bg-black/50 px-2.5 py-1 rounded-full">手のひらを枠に合わせてください</span>
+            <div class="relative w-52 h-64 sm:w-60 sm:h-72 border-2 border-dashed border-amber-400/75 rounded-[38%] flex flex-col items-center justify-between p-3 shadow-[0_0_30px_rgba(229,193,88,0.25)]">
+              <span class="text-[11px] text-amber-200 bg-black/65 px-2.5 py-0.5 rounded-full">⬆️ 指先を上に向けて枠に合わせる</span>
+              <span id="cameraThumbGuideBadge" class="text-xs font-bold text-amber-300 bg-mystic-950/85 border border-amber-400/50 px-3 py-1 rounded-full shadow">
+                右手撮影：親指が「右側」になります
+              </span>
+              <span class="text-[10px] text-purple-200 bg-black/65 px-2.5 py-0.5 rounded-full">⬇️ 手首側</span>
             </div>
+          </div>
+
+          <!-- ドラッグ操作モード表示フローティングバッジ -->
+          <div id="stageInteractionBadge" class="hidden absolute top-2.5 left-2.5 z-20 pointer-events-none px-3 py-1 rounded-full bg-mystic-950/85 border border-amber-400/50 text-[11px] font-bold text-amber-200 shadow-lg">
+            👆 ライン編集モード：白い●や線名をドラッグして移動できます
           </div>
 
           <!-- 取り込み済み・解析用Canvas -->
@@ -246,38 +255,94 @@
           </button>
         </div>
 
-        <!-- 利き手・鑑定対象の手の選択 ＆ 撮影後画像の上下反転・筋検出コントロール -->
+        <!-- 利き手・撮影画像の拡大縮小・ラインポイント手動調整コントロール -->
         <div class="space-y-2.5 pt-2 border-t border-purple-500/20 text-xs">
+          <!-- 1段目：右手/左手 ＆ 画像反転・ライン左右反転 -->
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-purple-200/80">鑑定する手：</span>
-              <div class="flex gap-1.5">
-                <label class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
-                  <input type="radio" name="palmHandSide" value="right" checked class="accent-amber-400" />
-                  <span>右手（現在・未来）</span>
-                </label>
-                <label class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
-                  <input type="radio" name="palmHandSide" value="left" class="accent-amber-400" />
-                  <span>左手（先天・潜在）</span>
-                </label>
-              </div>
+              <label class="cursor-pointer flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
+                <input type="radio" name="palmHandSide" value="right" checked class="accent-amber-400" />
+                <span>右手 (親指が右)</span>
+              </label>
+              <label class="cursor-pointer flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
+                <input type="radio" name="palmHandSide" value="left" class="accent-amber-400" />
+                <span>左手 (親指が左)</span>
+              </label>
             </div>
 
-            <div class="flex items-center gap-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button id="mirrorLinesOnlyBtn" type="button"
+                class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/40 text-xs font-bold flex items-center gap-1 transition"
+                title="写真はそのままに、4大ラインの左右の向き（親指側）だけを反転します">
+                <span>👍</span><span>ラインだけ左右反転</span>
+              </button>
               <button id="flipCanvasHorizontalBtn" type="button"
                 class="px-2.5 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-100 border border-purple-400/30 text-xs font-medium flex items-center gap-1 transition"
-                title="左右の向き（親指の位置）を反転します">
-                <span>↔️</span><span>左右反転</span>
+                title="写真自体を左右反転します">
+                <span>↔️</span><span>写真左右反転</span>
               </button>
               <button id="flipCanvasVerticalBtn" type="button"
                 class="px-2.5 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-amber-200 border border-amber-400/30 text-xs font-medium flex items-center gap-1 transition"
-                title="相手の手相を対面で撮ったときなどに上下を反転します">
-                <span>🔃</span><span>上下反転</span>
+                title="相手の手相を対面で撮ったときなどに写真を上下反転します">
+                <span>🔃</span><span>写真上下反転</span>
               </button>
             </div>
           </div>
 
-          <!-- 手の筋（しわ）認識設定バー -->
+          <!-- 2段目：撮影画像の拡大・縮小（ズーム）＆ 操作モード切替バー -->
+          <div class="rounded-xl bg-mystic-950/85 border border-amber-400/30 p-3 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="text-amber-300 font-bold">🔍 撮影画像の拡大・縮小:</span>
+                <button id="zoomOutBtn" type="button"
+                  class="w-7 h-7 rounded-lg bg-purple-900/70 hover:bg-purple-800 text-amber-200 border border-purple-400/30 font-bold flex items-center justify-center">
+                  －
+                </button>
+                <input id="imageZoomSlider" type="range" min="50" max="300" step="5" value="100"
+                  class="w-24 sm:w-32 accent-amber-400 cursor-pointer" />
+                <button id="zoomInBtn" type="button"
+                  class="w-7 h-7 rounded-lg bg-purple-900/70 hover:bg-purple-800 text-amber-200 border border-purple-400/30 font-bold flex items-center justify-center">
+                  ＋
+                </button>
+                <span id="imageZoomValLabel" class="font-mono text-amber-300 w-11 text-right">100%</span>
+                <button id="zoomResetBtn" type="button"
+                  class="px-2 py-1 rounded-md bg-mystic-900 hover:bg-purple-900 text-purple-200 border border-purple-500/30 text-[11px]">
+                  リセット
+                </button>
+              </div>
+
+              <!-- 画面タッチ操作モード切り替え（ラインのポイント移動 vs 写真の位置移動） -->
+              <div class="flex items-center gap-1 bg-mystic-900 p-1 rounded-xl border border-purple-500/30">
+                <button id="modeEditLinesBtn" type="button"
+                  class="px-2.5 py-1 rounded-lg bg-amber-400 text-mystic-950 font-bold text-[11px] transition flex items-center gap-1">
+                  <span>👆</span><span>ラインのポイントを動かす</span>
+                </button>
+                <button id="modePanImageBtn" type="button"
+                  class="px-2.5 py-1 rounded-lg text-purple-200 hover:text-amber-200 text-[11px] transition flex items-center gap-1">
+                  <span>✋</span><span>写真の位置を動かす</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-purple-500/20">
+              <span class="text-[11px] text-amber-200/90">
+                💡 <strong>ライン調整方法:</strong> 「👆ラインのポイントを動かす」を選び、画面上の<strong>大きな白い丸（●）</strong>や<strong>[生命線]などの文字枠</strong>を指・マウスでドラッグすると自由自在に形や位置を変えられます。
+              </span>
+              <div class="flex items-center gap-1.5">
+                <button id="refitLinesToCurrentViewBtn" type="button"
+                  class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 text-[11px] font-medium transition">
+                  🎯 今の画像位置にラインを再フィット
+                </button>
+                <button id="resetLinesDefaultBtn" type="button"
+                  class="px-2.5 py-1 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-400/30 text-[11px] transition">
+                  🔄 ライン初期化
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3段目：手の筋（しわ）認識設定バー -->
           <div class="flex flex-wrap items-center justify-between gap-3 px-3 py-2 rounded-xl bg-mystic-950/80 border border-purple-500/25">
             <label class="cursor-pointer inline-flex items-center gap-2 text-amber-200 select-none">
               <input id="chkShowRawCreases" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer" />
@@ -291,9 +356,6 @@
               <span id="creaseSensitivityVal" class="text-[11px] font-mono text-amber-300 w-7">62%</span>
             </div>
           </div>
-          <p class="text-[11px] text-purple-300/75">
-            💡 解析後、画像上の白いポイント（●）を指やマウスでドラッグすると、手相の筋に合わせてライン位置を手動微調整できます。
-          </p>
         </div>
       </section>
 
@@ -508,6 +570,10 @@
               <img id="resultPalmSnapshot" alt="解析された手相画像" class="w-full h-full object-contain" />
             </div>
             <p id="resultPalmMetricSummary" class="mt-2 text-[11px] text-purple-300/80 font-mono text-center"></p>
+            <button id="scrollToStageEditorBtn" type="button"
+              class="mt-2 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-bold transition flex items-center gap-1.5">
+              <span>👆</span><span>上の画面でラインのポイントや拡大率を手動調整する</span>
+            </button>
           </div>
 
           <!-- 基本4大手相ライン鑑定 -->
@@ -1093,6 +1159,18 @@
       cameraStream: null,
       facingMode: 'environment',
       cameraFlipVertical: false,
+      baseImageCanvas: null,
+      imageZoom: 1.0,
+      imagePanX: 0,
+      imagePanY: 0,
+      interactionMode: 'editLines', // 'editLines' | 'panImage'
+      isPanningImage: false,
+      panStartClientX: 0,
+      panStartClientY: 0,
+      panStartX: 0,
+      panStartY: 0,
+      lastPalmBounds: null,
+      lastThumbOnLeft: false,
       lastPalmMetrics: null,
       tracedLines: null,
       rawCreaseGrid: null,
@@ -1117,12 +1195,15 @@
       importPluginJsonBtn: document.getElementById('importPluginJsonBtn'),
 
       // ステージ＆カメラ
+      stageContainer: document.getElementById('stageContainer'),
       emptyStagePlaceholder: document.getElementById('emptyStagePlaceholder'),
       cameraVideo: document.getElementById('cameraVideo'),
       cameraGuideOverlay: document.getElementById('cameraGuideOverlay'),
+      cameraThumbGuideBadge: document.getElementById('cameraThumbGuideBadge'),
       cameraActiveControls: document.getElementById('cameraActiveControls'),
       palmCanvas: document.getElementById('palmCanvas'),
       overlayCanvas: document.getElementById('overlayCanvas'),
+      stageInteractionBadge: document.getElementById('stageInteractionBadge'),
       scanAnimationOverlay: document.getElementById('scanAnimationOverlay'),
       scanPercentText: document.getElementById('scanPercentText'),
       scanStepLabel: document.getElementById('scanStepLabel'),
@@ -1147,6 +1228,16 @@
       flipCameraVerticalLabel: document.getElementById('flipCameraVerticalLabel'),
       flipCanvasVerticalBtn: document.getElementById('flipCanvasVerticalBtn'),
       flipCanvasHorizontalBtn: document.getElementById('flipCanvasHorizontalBtn'),
+      mirrorLinesOnlyBtn: document.getElementById('mirrorLinesOnlyBtn'),
+      zoomOutBtn: document.getElementById('zoomOutBtn'),
+      imageZoomSlider: document.getElementById('imageZoomSlider'),
+      zoomInBtn: document.getElementById('zoomInBtn'),
+      imageZoomValLabel: document.getElementById('imageZoomValLabel'),
+      zoomResetBtn: document.getElementById('zoomResetBtn'),
+      modeEditLinesBtn: document.getElementById('modeEditLinesBtn'),
+      modePanImageBtn: document.getElementById('modePanImageBtn'),
+      refitLinesToCurrentViewBtn: document.getElementById('refitLinesToCurrentViewBtn'),
+      resetLinesDefaultBtn: document.getElementById('resetLinesDefaultBtn'),
       chkShowRawCreases: document.getElementById('chkShowRawCreases'),
       creaseSensitivitySlider: document.getElementById('creaseSensitivitySlider'),
       creaseSensitivityVal: document.getElementById('creaseSensitivityVal'),
@@ -1169,6 +1260,7 @@
       resultTotalRankText: document.getElementById('resultTotalRankText'),
       resultPalmSnapshot: document.getElementById('resultPalmSnapshot'),
       resultPalmMetricSummary: document.getElementById('resultPalmMetricSummary'),
+      scrollToStageEditorBtn: document.getElementById('scrollToStageEditorBtn'),
       coreLinesContainer: document.getElementById('coreLinesContainer'),
       narrativeSectionTitle: document.getElementById('narrativeSectionTitle'),
       resultPersonalizedNarrative: document.getElementById('resultPersonalizedNarrative'),
@@ -1426,6 +1518,86 @@
       els.cameraActiveControls.classList.add('hidden');
     }
 
+    function updateHandSideGuideUI() {
+      const handSideEl = document.querySelector('input[name="palmHandSide"]:checked');
+      const handSide = handSideEl ? handSideEl.value : 'right';
+      if (els.cameraThumbGuideBadge) {
+        if (handSide === 'left') {
+          els.cameraThumbGuideBadge.textContent = '✋ 左手モード（手のひらを向け、親指を左側にして枠に合わせてください）';
+        } else {
+          els.cameraThumbGuideBadge.textContent = '✋ 右手モード（手のひらを向け、親指を右側にして枠に合わせてください）';
+        }
+      }
+    }
+
+    function saveBaseImageFromCurrentCanvas(resetZoom = true) {
+      const src = els.palmCanvas;
+      if (!src || !src.width || !src.height) return;
+      const base = document.createElement('canvas');
+      base.width = src.width;
+      base.height = src.height;
+      base.getContext('2d').drawImage(src, 0, 0);
+      state.baseImageCanvas = base;
+      if (resetZoom) {
+        state.imageZoom = 1.0;
+        state.imagePanX = 0;
+        state.imagePanY = 0;
+        if (els.imageZoomSlider) els.imageZoomSlider.value = '100';
+        if (els.imageZoomValLabel) els.imageZoomValLabel.textContent = '100%';
+      }
+    }
+
+    function applyImageZoomAndPan(recalcOverlaySnapshot = true) {
+      if (!state.baseImageCanvas) return;
+      const base = state.baseImageCanvas;
+      const canvas = els.palmCanvas;
+      const w = base.width;
+      const h = base.height;
+      if (canvas.width !== w) canvas.width = w;
+      if (canvas.height !== h) canvas.height = h;
+
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.fillStyle = '#070510';
+      ctx.fillRect(0, 0, w, h);
+
+      // 中心基準で拡大・縮小＋パン移動を適用
+      ctx.translate(w * 0.5 + state.imagePanX, h * 0.5 + state.imagePanY);
+      ctx.scale(state.imageZoom, state.imageZoom);
+      ctx.drawImage(base, -w * 0.5, -h * 0.5, w, h);
+      ctx.restore();
+
+      const pct = Math.round(state.imageZoom * 100);
+      if (els.imageZoomSlider) els.imageZoomSlider.value = String(pct);
+      if (els.imageZoomValLabel) els.imageZoomValLabel.textContent = `${pct}%`;
+
+      if (recalcOverlaySnapshot && state.lastPalmMetrics && !els.overlayCanvas.classList.contains('hidden')) {
+        state.lastPalmMetrics.snapshotDataUrl = renderOverlayAndBuildSnapshot();
+        els.resultPalmSnapshot.src = state.lastPalmMetrics.snapshotDataUrl;
+      }
+    }
+
+    function setInteractionMode(mode) {
+      state.interactionMode = mode === 'panImage' ? 'panImage' : 'editLines';
+      if (els.modeEditLinesBtn && els.modePanImageBtn) {
+        if (state.interactionMode === 'editLines') {
+          els.modeEditLinesBtn.className = 'px-2.5 py-1 rounded-md font-bold bg-amber-400 text-mystic-950 transition flex items-center gap-1 shadow';
+          els.modePanImageBtn.className = 'px-2.5 py-1 rounded-md text-purple-200 hover:text-amber-200 transition flex items-center gap-1';
+          els.overlayCanvas.style.cursor = 'grab';
+          if (els.stageInteractionBadge) {
+            els.stageInteractionBadge.textContent = '👆 ライン編集モード: ●点やラベルをドラッグして線を移動';
+          }
+        } else {
+          els.modePanImageBtn.className = 'px-2.5 py-1 rounded-md font-bold bg-amber-400 text-mystic-950 transition flex items-center gap-1 shadow';
+          els.modeEditLinesBtn.className = 'px-2.5 py-1 rounded-md text-purple-200 hover:text-amber-200 transition flex items-center gap-1';
+          els.overlayCanvas.style.cursor = 'move';
+          if (els.stageInteractionBadge) {
+            els.stageInteractionBadge.textContent = '✋ 写真移動モード: ドラッグで写真位置を移動 / ホイールで拡大縮小';
+          }
+        }
+      }
+    }
+
     function updateCameraFlipUI() {
       if (state.cameraFlipVertical) {
         els.cameraVideo.style.transform = 'scaleY(-1)';
@@ -1443,23 +1615,26 @@
         showToast('先にカメラ撮影または写真をアップロードしてください', 'ℹ️');
         return;
       }
-      const canvas = els.palmCanvas;
-      const w = canvas.width;
-      const h = canvas.height;
+      const target = state.baseImageCanvas || els.palmCanvas;
+      const w = target.width;
+      const h = target.height;
       if (!w || !h) return;
 
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = w;
       tempCanvas.height = h;
-      tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+      tempCanvas.getContext('2d').drawImage(target, 0, 0);
 
-      const ctx = canvas.getContext('2d');
+      const ctx = target.getContext('2d');
       ctx.save();
       ctx.clearRect(0, 0, w, h);
       ctx.translate(0, h);
       ctx.scale(1, -1);
       ctx.drawImage(tempCanvas, 0, 0);
       ctx.restore();
+
+      state.imagePanY = -state.imagePanY;
+      applyImageZoomAndPan(false);
 
       if (!els.resultSection.classList.contains('hidden')) {
         state.lastPalmMetrics = analyzePalmCanvasAndDrawOverlay();
@@ -1475,23 +1650,26 @@
         showToast('先にカメラ撮影または写真をアップロードしてください', 'ℹ️');
         return;
       }
-      const canvas = els.palmCanvas;
-      const w = canvas.width;
-      const h = canvas.height;
+      const target = state.baseImageCanvas || els.palmCanvas;
+      const w = target.width;
+      const h = target.height;
       if (!w || !h) return;
 
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = w;
       tempCanvas.height = h;
-      tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+      tempCanvas.getContext('2d').drawImage(target, 0, 0);
 
-      const ctx = canvas.getContext('2d');
+      const ctx = target.getContext('2d');
       ctx.save();
       ctx.clearRect(0, 0, w, h);
       ctx.translate(w, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(tempCanvas, 0, 0);
       ctx.restore();
+
+      state.imagePanX = -state.imagePanX;
+      applyImageZoomAndPan(false);
 
       if (!els.resultSection.classList.contains('hidden')) {
         state.lastPalmMetrics = analyzePalmCanvasAndDrawOverlay();
@@ -1504,6 +1682,7 @@
 
     async function startCamera() {
       stopCameraStream();
+      updateHandSideGuideUI();
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -1519,6 +1698,7 @@
         els.emptyStagePlaceholder.classList.add('hidden');
         els.palmCanvas.classList.add('hidden');
         els.overlayCanvas.classList.add('hidden');
+        if (els.stageInteractionBadge) els.stageInteractionBadge.classList.add('hidden');
         els.cameraVideo.classList.remove('hidden');
         els.cameraGuideOverlay.classList.remove('hidden');
         els.cameraActiveControls.classList.remove('hidden');
@@ -1543,13 +1723,14 @@
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
+      saveBaseImageFromCurrentCanvas(true);
       stopCameraStream();
       state.hasImage = true;
       state.imageSourceType = 'camera';
       els.palmCanvas.classList.remove('hidden');
       els.overlayCanvas.classList.add('hidden');
       els.imageSourceStatus.textContent = state.cameraFlipVertical ? 'カメラ撮影完了 (上下反転済)' : 'カメラ撮影完了';
-      showToast('手のひら写真を撮影しました！', '📸');
+      showToast('手のひら写真を撮影しました！拡大・縮小スライダーでサイズ調整もできます', '📸');
     }
 
     function loadUploadedFile(file) {
@@ -1577,13 +1758,14 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
 
+          saveBaseImageFromCurrentCanvas(true);
           els.emptyStagePlaceholder.classList.add('hidden');
           els.palmCanvas.classList.remove('hidden');
           els.overlayCanvas.classList.add('hidden');
           state.hasImage = true;
           state.imageSourceType = 'upload';
           els.imageSourceStatus.textContent = '写真アップロード済';
-          showToast('手のひら画像を読み込みました！', '📁');
+          showToast('手のひら画像を読み込みました！拡大・縮小や位置調整が可能です', '📁');
         };
         img.src = e.target.result;
       };
@@ -1598,6 +1780,11 @@
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
+
+      const handSideEl = document.querySelector('input[name="palmHandSide"]:checked');
+      const selectedHandSide = handSideEl ? handSideEl.value : 'right';
+      // 手のひら正面を見たとき: 左手(left)は左側に親指、右手(right)は右側に親指
+      const isRightHand = (selectedHandSide === 'right');
 
       const seed = state.sampleSeedCounter++;
       const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.52, 30, w * 0.5, h * 0.5, w * 0.6);
@@ -1619,6 +1806,12 @@
       ctx.restore();
 
       ctx.save();
+      if (isRightHand) {
+        // 基本パスは左側に親指がある（左手正面）形状なので、右手選択時は左右反転して右側に親指を配置
+        ctx.translate(w, 0);
+        ctx.scale(-1, 1);
+      }
+
       const palmGrad = ctx.createRadialGradient(w * 0.5, h * 0.58, 20, w * 0.5, h * 0.55, 230);
       palmGrad.addColorStop(0, '#f3cfb3');
       palmGrad.addColorStop(0.65, '#ddb092');
@@ -1650,8 +1843,8 @@
       ctx.stroke();
 
       const offset = (seed % 5) * 6 - 12;
-      ctx.strokeStyle = 'rgba(130, 72, 48, 0.55)';
-      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = 'rgba(130, 72, 48, 0.62)';
+      ctx.lineWidth = 3.2;
       ctx.lineCap = 'round';
 
       ctx.beginPath();
@@ -1675,13 +1868,14 @@
       ctx.stroke();
       ctx.restore();
 
+      saveBaseImageFromCurrentCanvas(true);
       els.emptyStagePlaceholder.classList.add('hidden');
       els.palmCanvas.classList.remove('hidden');
       els.overlayCanvas.classList.add('hidden');
       state.hasImage = true;
       state.imageSourceType = 'sample';
-      els.imageSourceStatus.textContent = `サンプル手相 #${seed}`;
-      showToast(`神秘サンプル手相（パターン #${seed}）を生成しました`, '🪄');
+      els.imageSourceStatus.textContent = `サンプル手相 #${seed} (${isRightHand ? '右手' : '左手'})`;
+      showToast(`神秘サンプル手相（${isRightHand ? '右手' : '左手'}パターン #${seed}）を生成しました`, '🪄');
     }
 
     /********************************************************************
@@ -1891,23 +2085,14 @@
         }
       }
 
-      // 4. 親指側（左側 or 右側）の自動判定（生命線＋知能線の合流点の強さ＆手選択）
+      // 4. 親指側（左側 or 右側）の決定
+      // 手のひら正面（指を上）に向けた場合:
+      // ・左手(left)の手のひら ＝ 親指は向かって左側 (thumbOnLeft = true)
+      // ・右手(right)の手のひら ＝ 親指は向かって右側 (thumbOnLeft = false)
       const handSideEl = document.querySelector('input[name="palmHandSide"]:checked');
       const selectedHandSide = handSideEl ? handSideEl.value : 'right';
-
-      let leftSideCreaseSum = 0, rightSideCreaseSum = 0;
-      const midX = Math.round((minX + maxX) * 0.5);
-      for (let y = palmTop + Math.round((palmBottom - palmTop) * 0.15); y < palmTop + Math.round((palmBottom - palmTop) * 0.65); y++) {
-        for (let x = minX; x < maxX; x++) {
-          const val = normCrease[y * GW + x];
-          if (x < midX) leftSideCreaseSum += val;
-          else rightSideCreaseSum += val;
-        }
-      }
-      // 基本的には手のひら正面撮影では右手＝左側に親指、左手＝右側に親指。ただし画像内の筋の偏りが極端に反対の場合は自動補正
-      let thumbOnLeft = (selectedHandSide === 'right');
-      if (leftSideCreaseSum > rightSideCreaseSum * 1.45) thumbOnLeft = true;
-      else if (rightSideCreaseSum > leftSideCreaseSum * 1.45) thumbOnLeft = false;
+      const thumbOnLeft = (selectedHandSide === 'left');
+      state.lastThumbOnLeft = thumbOnLeft;
 
       // 5. Viterbi 動的計画法による「実際の暗い筋（しわ）」に沿った4大ラインのトラッキング
       const traceViterbiLine = (refPointFn, normVecFn, energyGrid, searchRadius, steps = 26) => {
@@ -1936,19 +2121,19 @@
               }
             }
 
-            // 強い筋（溝）がある場所を高く評価し、中心から離れすぎない緩やかな事前分布を持たせる
-            const priorPenalty = (offset * offset) / (searchRadius * searchRadius) * 0.28;
-            const nodeScore = localCrease * 3.8 - priorPenalty;
+            // 強い筋（溝）がある場所を高く評価し、基準軌道から外れすぎないよう適度な正則化をかける
+            const priorPenalty = (offset * offset) / (searchRadius * searchRadius) * 0.42;
+            const nodeScore = localCrease * 3.5 - priorPenalty;
 
             if (s === 0) {
               dp[0][wi] = nodeScore;
             } else {
               let bestPrev = -1e9;
               let bestPrevIdx = wi;
-              for (let d = -3; d <= 3; d++) {
+              for (let d = -2; d <= 2; d++) {
                 const pwi = wi + d;
                 if (pwi < 0 || pwi >= W_LEN) continue;
-                const stepPenalty = (d * d) * 0.14;
+                const stepPenalty = (d * d) * 0.22;
                 const cand = dp[s - 1][pwi] + nodeScore - stepPenalty;
                 if (cand > bestPrev) {
                   bestPrev = cand;
@@ -1981,10 +2166,10 @@
           cur = back[s][cur];
         }
 
-        // パスを平滑化して7個の主要制御点に集約（ドラッグ微調整も可能に）
+        // パスを平滑化して、ユーザーが直感的に掴んで動かしやすい4個の主要制御点（始点・中間1・中間2・終点）に集約
         const smoothed = rawPath.map((pt, i) => {
           let sx = 0, sy = 0, cnt = 0;
-          for (let k = -2; k <= 2; k++) {
+          for (let k = -3; k <= 3; k++) {
             const j = Math.max(0, Math.min(steps - 1, i + k));
             sx += rawPath[j].x;
             sy += rawPath[j].y;
@@ -1993,8 +2178,11 @@
           return { x: sx / cnt, y: sy / cnt };
         });
 
-        const keyIndices = [0, 4, 8, 13, 17, 21, steps - 1];
-        const controlPoints = keyIndices.map(idx => smoothed[idx]);
+        const keyIndices = [0, 8, 17, steps - 1];
+        const controlPoints = keyIndices.map(idx => ({
+          x: smoothed[idx].x,
+          y: smoothed[idx].y
+        }));
         const avgStrength = sumStrength / steps;
 
         return { controlPoints, avgStrength };
@@ -2005,11 +2193,13 @@
       const pSpanX = pRight - pLeft;
       const pSpanY = palmBottom - palmTop;
 
+      state.lastPalmBounds = { pLeft, pRight, palmTop, palmBottom, GW, GH };
+
       const mapX = (relX) => thumbOnLeft ? (pLeft + relX * pSpanX) : (pRight - relX * pSpanX);
       const mapY = (relY) => palmTop + relY * pSpanY;
       const flipNx = (nx) => thumbOnLeft ? nx : -nx;
 
-      const searchRad = Math.max(10, Math.round(palmWidth * 0.12));
+      const searchRad = Math.max(8, Math.round(palmWidth * 0.095));
 
       // ① 生命線 (Life Line): 親指と人差し指の間から金星丘を囲んで手首へ弧を描く筋
       const lifeTrace = traceViterbiLine(
@@ -2052,7 +2242,7 @@
         }),
         () => ({ nx: 1.0, ny: 0 }),
         creaseVert,
-        Math.max(9, Math.round(searchRad * 0.85))
+        Math.max(8, Math.round(searchRad * 0.85))
       );
 
       state.rawCreaseGrid = { GW, GH, normCrease, interiorMask };
@@ -2062,6 +2252,10 @@
         { id: 'heart', label: '感情線', color: '#fb7185', pts: heartTrace.controlPoints, strength: heartTrace.avgStrength },
         { id: 'fate', label: '運命線', color: '#facc15', pts: fateTrace.controlPoints, strength: fateTrace.avgStrength }
       ];
+
+      if (els.stageInteractionBadge) {
+        els.stageInteractionBadge.classList.remove('hidden');
+      }
 
       // 実測された各筋の深さ・鮮明度から4大スコアを算出
       const seed = (avgR * 7 + avgG * 13 + avgB * 17 + Math.round(totalCreaseEnergy)) % 1000;
@@ -2089,7 +2283,145 @@
     }
 
     /**
-     * 実測された手の筋（しわピクセル）＋4大主要手相ラインをオーバーレイ描画し、合成スナップショットを返す
+     * 4大ラインのみを左右反転する（写真はそのままに、親指側が逆だった場合をワンタップ補正）
+     */
+    function mirrorTracedLinesOnly() {
+      if (!state.tracedLines) {
+        showToast('先に「AI手相スキャン＆プラグイン統合鑑定を開始」を押すか、サンプル手相を解析してください', 'ℹ️');
+        return;
+      }
+      state.lastThumbOnLeft = !state.lastThumbOnLeft;
+      let centerNormX = 0.5;
+      if (state.lastPalmBounds) {
+        const { pLeft, pRight, GW } = state.lastPalmBounds;
+        centerNormX = ((pLeft + pRight) * 0.5) / Math.max(1, GW);
+      }
+      state.tracedLines.forEach(line => {
+        line.pts.forEach(pt => {
+          pt.x = Math.max(0.04, Math.min(0.96, centerNormX * 2 - pt.x));
+        });
+      });
+      recalculateScoresFromEditedLines();
+      showToast('4大ラインの左右の向き（親指側）を反転しました！●点をドラッグして微調整もできます', '👍');
+    }
+
+    /**
+     * 4大ラインを綺麗な基本配置（解剖学的な標準カーブ）に初期化する
+     */
+    function resetLinesToAnatomicalDefault() {
+      if (!state.hasImage) {
+        showToast('先に手のひら写真を用意してください', 'ℹ️');
+        return;
+      }
+      const handSideEl = document.querySelector('input[name="palmHandSide"]:checked');
+      const selectedHandSide = handSideEl ? handSideEl.value : 'right';
+      const thumbOnLeft = (selectedHandSide === 'left');
+      state.lastThumbOnLeft = thumbOnLeft;
+
+      const bounds = state.lastPalmBounds || { pLeft: 55, pRight: 185, palmTop: 55, palmBottom: 155, GW: 240, GH: 180 };
+      const { pLeft, pRight, palmTop, palmBottom, GW, GH } = bounds;
+      const pSpanX = pRight - pLeft;
+      const pSpanY = palmBottom - palmTop;
+      const normX = (relX) => (thumbOnLeft ? (pLeft + relX * pSpanX) : (pRight - relX * pSpanX)) / GW;
+      const normY = (relY) => (palmTop + relY * pSpanY) / GH;
+
+      const build4Pts = (fn) => [0, 0.33, 0.67, 1.0].map(t => fn(t));
+
+      state.tracedLines = [
+        {
+          id: 'life',
+          label: '生命線',
+          color: '#34d399',
+          pts: build4Pts(t => ({
+            x: normX(0.14 + 0.34 * Math.sin(t * Math.PI * 0.72)),
+            y: normY(0.24 + 0.64 * t)
+          })),
+          strength: 0.45
+        },
+        {
+          id: 'head',
+          label: '知能線',
+          color: '#38bdf8',
+          pts: build4Pts(t => ({
+            x: normX(0.16 + 0.64 * t),
+            y: normY(0.26 + 0.34 * Math.pow(t, 1.15))
+          })),
+          strength: 0.45
+        },
+        {
+          id: 'heart',
+          label: '感情線',
+          color: '#fb7185',
+          pts: build4Pts(t => ({
+            x: normX(0.88 - 0.60 * t),
+            y: normY(0.26 - 0.16 * Math.pow(t, 1.1))
+          })),
+          strength: 0.45
+        },
+        {
+          id: 'fate',
+          label: '運命線',
+          color: '#facc15',
+          pts: build4Pts(t => ({
+            x: normX(0.48 + 0.03 * Math.sin(t * Math.PI)),
+            y: normY(0.84 - 0.62 * t)
+          })),
+          strength: 0.42
+        }
+      ];
+
+      recalculateScoresFromEditedLines();
+      showToast('4大ラインを標準位置にリセットしました。●ポイントをドラッグして手の筋に合わせてください', '🔄');
+    }
+
+    /**
+     * ユーザーが●ポイントやラベルをドラッグして調整した後のライン位置から、下のしわ強度を再計測してスコア＆スナップショットを更新
+     */
+    function recalculateScoresFromEditedLines() {
+      if (!state.tracedLines || !state.lastPalmMetrics) return;
+      if (state.rawCreaseGrid) {
+        const { GW, GH, normCrease } = state.rawCreaseGrid;
+        state.tracedLines.forEach(line => {
+          const pts = line.pts;
+          let sum = 0, count = 0;
+          for (let i = 0; i < pts.length - 1; i++) {
+            for (let s = 0; s <= 6; s++) {
+              const t = s / 6;
+              const gx = Math.max(1, Math.min(GW - 2, Math.round((pts[i].x * (1 - t) + pts[i + 1].x * t) * GW)));
+              const gy = Math.max(1, Math.min(GH - 2, Math.round((pts[i].y * (1 - t) + pts[i + 1].y * t) * GH)));
+              let bestLocal = 0;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const v = normCrease[(gy + dy) * GW + (gx + dx)];
+                  if (v > bestLocal) bestLocal = v;
+                }
+              }
+              sum += bestLocal;
+              count++;
+            }
+          }
+          line.strength = count > 0 ? sum / count : 0.4;
+        });
+
+        const seed = state.lastPalmMetrics.seed || 500;
+        const toLineScore = (strength, baseOffset) => {
+          return Math.max(68, Math.min(98, Math.round(70 + strength * 34 + (seed % 7) + baseOffset)));
+        };
+        state.lastPalmMetrics.vitalityScore = toLineScore(state.tracedLines[0].strength, 2);
+        state.lastPalmMetrics.intellectScore = toLineScore(state.tracedLines[1].strength, 1);
+        state.lastPalmMetrics.emotionScore = toLineScore(state.tracedLines[2].strength, 2);
+        state.lastPalmMetrics.fortuneScore = toLineScore(state.tracedLines[3].strength, 0);
+      }
+
+      state.lastPalmMetrics.snapshotDataUrl = renderOverlayAndBuildSnapshot();
+      els.resultPalmSnapshot.src = state.lastPalmMetrics.snapshotDataUrl;
+      if (!els.resultSection.classList.contains('hidden')) {
+        renderReadingResults();
+      }
+    }
+
+    /**
+     * 実測された手の筋（しわピクセル）＋4大主要手相ライン＋操作用ポイントハンドルをオーバーレイ描画し、合成スナップショットを返す
      */
     function renderOverlayAndBuildSnapshot() {
       const srcCanvas = els.palmCanvas;
@@ -2136,9 +2468,9 @@
         octx.restore();
       }
 
-      // レイヤー2: 動的経路探索された4大手相ライン＋ドラッグ微調整用キーポイント
+      // レイヤー2: 4大手相ライン＋ドラッグ微調整用キーポイント（全4点に大きめハンドル＋ラベルドラッグ対応）
       if (state.tracedLines) {
-        state.tracedLines.forEach(line => {
+        state.tracedLines.forEach((line, lIdx) => {
           const pts = line.pts;
           if (!pts || pts.length < 2) return;
 
@@ -2146,48 +2478,85 @@
           octx.strokeStyle = line.color;
           octx.shadowColor = line.color;
           octx.shadowBlur = 10;
-          octx.lineWidth = Math.max(3, w * 0.0052);
+          octx.lineWidth = Math.max(3.5, w * 0.0058);
           octx.lineCap = 'round';
           octx.lineJoin = 'round';
 
-          // 滑らかなスプライン曲線として描画
+          // 4つの制御点を通る滑らかな曲線を描画
           octx.beginPath();
           octx.moveTo(pts[0].x * w, pts[0].y * h);
-          for (let i = 0; i < pts.length - 1; i++) {
-            const xc = ((pts[i].x + pts[i + 1].x) * 0.5) * w;
-            const yc = ((pts[i].y + pts[i + 1].y) * 0.5) * h;
-            octx.quadraticCurveTo(pts[i].x * w, pts[i].y * h, xc, yc);
+          if (pts.length === 4) {
+            const xc1 = ((pts[0].x + pts[1].x) * 0.5) * w;
+            const yc1 = ((pts[0].y + pts[1].y) * 0.5) * h;
+            octx.quadraticCurveTo(pts[0].x * w, pts[0].y * h, xc1, yc1);
+            const xc2 = ((pts[1].x + pts[2].x) * 0.5) * w;
+            const yc2 = ((pts[1].y + pts[2].y) * 0.5) * h;
+            octx.quadraticCurveTo(pts[1].x * w, pts[1].y * h, xc2, yc2);
+            octx.quadraticCurveTo(pts[2].x * w, pts[2].y * h, pts[3].x * w, pts[3].y * h);
+          } else {
+            for (let i = 0; i < pts.length - 1; i++) {
+              const xc = ((pts[i].x + pts[i + 1].x) * 0.5) * w;
+              const yc = ((pts[i].y + pts[i + 1].y) * 0.5) * h;
+              octx.quadraticCurveTo(pts[i].x * w, pts[i].y * h, xc, yc);
+            }
+            const last = pts[pts.length - 1];
+            octx.lineTo(last.x * w, last.y * h);
           }
-          const last = pts[pts.length - 1];
-          octx.lineTo(last.x * w, last.y * h);
           octx.stroke();
 
-          // ドラッグ可能な制御点（●）を描画
-          pts.forEach((pt, idx) => {
-            if (idx % 2 === 0 || idx === pts.length - 1) {
-              octx.fillStyle = '#ffffff';
-              octx.strokeStyle = line.color;
-              octx.lineWidth = 2;
-              octx.beginPath();
-              octx.arc(pt.x * w, pt.y * h, Math.max(4, w * 0.0065), 0, Math.PI * 2);
-              octx.fill();
-              octx.stroke();
-            }
+          // ドラッグ可能な制御点（●）を全ポイントに大きく分かりやすく描画
+          const handleR = Math.max(6.5, w * 0.0095);
+          pts.forEach((pt, pIdx) => {
+            const isDraggingThis = state.draggingPoint && state.draggingPoint.lIdx === lIdx && state.draggingPoint.pIdx === pIdx;
+            const cx = pt.x * w;
+            const cy = pt.y * h;
+
+            // 外側のタッチガイド発光リング
+            octx.save();
+            octx.beginPath();
+            octx.arc(cx, cy, isDraggingThis ? handleR * 1.85 : handleR * 1.45, 0, Math.PI * 2);
+            octx.fillStyle = isDraggingThis ? 'rgba(255, 255, 255, 0.38)' : 'rgba(10, 8, 22, 0.55)';
+            octx.fill();
+            octx.strokeStyle = line.color;
+            octx.lineWidth = isDraggingThis ? 2.5 : 1.5;
+            octx.stroke();
+            octx.restore();
+
+            // 中心の白い●ノブ
+            octx.beginPath();
+            octx.arc(cx, cy, isDraggingThis ? handleR * 1.15 : handleR * 0.85, 0, Math.PI * 2);
+            octx.fillStyle = isDraggingThis ? line.color : '#ffffff';
+            octx.fill();
+            octx.strokeStyle = '#070510';
+            octx.lineWidth = 1.5;
+            octx.stroke();
           });
 
-          // ラベルバッジ描画
+          // ラベルバッジ描画（ドラッグして線全体を平行移動可能）
           const mid = pts[Math.floor(pts.length / 2)];
           octx.font = `bold ${Math.max(11, Math.round(w * 0.017))}px "Noto Sans JP", sans-serif`;
-          const textW = octx.measureText(line.label).width;
-          const bx = Math.max(8, Math.min(w - textW - 20, mid.x * w - 6));
-          const by = Math.max(22, Math.min(h - 10, mid.y * h - 18));
-          octx.fillStyle = 'rgba(10, 8, 22, 0.84)';
-          octx.fillRect(bx, by, textW + 12, 22);
+          const labelText = `✥ ${line.label}`;
+          const textW = octx.measureText(labelText).width;
+          const boxW = textW + 14;
+          const boxH = 24;
+          const bx = Math.max(8, Math.min(w - boxW - 8, mid.x * w - boxW * 0.5));
+          const by = Math.max(12, Math.min(h - boxH - 8, mid.y * h - 28));
+
+          // ラベル当たり判定ボックスを正規化座標で保存
+          line.badgeBox = {
+            x0: bx / w,
+            y0: by / h,
+            x1: (bx + boxW) / w,
+            y1: (by + boxH) / h
+          };
+
+          octx.fillStyle = 'rgba(10, 8, 22, 0.88)';
+          octx.fillRect(bx, by, boxW, boxH);
           octx.strokeStyle = line.color;
-          octx.lineWidth = 1.2;
-          octx.strokeRect(bx, by, textW + 12, 22);
+          octx.lineWidth = 1.5;
+          octx.strokeRect(bx, by, boxW, boxH);
           octx.fillStyle = line.color;
-          octx.fillText(line.label, bx + 6, by + 15);
+          octx.fillText(labelText, bx + 7, by + 16);
           octx.restore();
         });
       }
@@ -2642,16 +3011,95 @@
       });
       els.flipCanvasVerticalBtn.addEventListener('click', flipCurrentCanvasVertically);
       els.flipCanvasHorizontalBtn.addEventListener('click', flipCurrentCanvasHorizontally);
+      els.mirrorLinesOnlyBtn.addEventListener('click', mirrorTracedLinesOnly);
 
-      // 右手・左手ラジオ変更時に手相の向きを再解析
+      // 写真の拡大・縮小（ズーム）＆パン移動コントロール
+      const setZoomValue = (newZoom) => {
+        if (!state.hasImage) {
+          showToast('先にカメラ撮影または写真をアップロードしてください', 'ℹ️');
+          return;
+        }
+        state.imageZoom = Math.max(0.5, Math.min(3.0, newZoom));
+        applyImageZoomAndPan(true);
+      };
+
+      els.zoomOutBtn.addEventListener('click', () => setZoomValue(state.imageZoom - 0.15));
+      els.zoomInBtn.addEventListener('click', () => setZoomValue(state.imageZoom + 0.15));
+      els.imageZoomSlider.addEventListener('input', (e) => {
+        setZoomValue(Number(e.target.value) / 100);
+      });
+      els.zoomResetBtn.addEventListener('click', () => {
+        if (!state.hasImage) return;
+        state.imageZoom = 1.0;
+        state.imagePanX = 0;
+        state.imagePanY = 0;
+        applyImageZoomAndPan(true);
+        showToast('写真の拡大率と位置を100%にリセットしました', '🔍');
+      });
+
+      // ステージ上でのマウスホイール拡大・縮小
+      els.stageContainer.addEventListener('wheel', (evt) => {
+        if (!state.hasImage || state.cameraStream) return;
+        evt.preventDefault();
+        const delta = evt.deltaY < 0 ? 0.1 : -0.1;
+        setZoomValue(state.imageZoom + delta);
+      }, { passive: false });
+
+      // 操作モード切替（ライン編集モード vs 写真移動モード）
+      els.modeEditLinesBtn.addEventListener('click', () => {
+        setInteractionMode('editLines');
+        showToast('「ラインのポイントを動かす」モードに切り替えました。●点やラベルをドラッグできます', '👆');
+      });
+      els.modePanImageBtn.addEventListener('click', () => {
+        setInteractionMode('panImage');
+        showToast('「写真の位置を動かす」モードに切り替えました。写真をドラッグして位置調整できます', '✋');
+      });
+
+      // 今の拡大・移動位置に対して4大ラインを再フィット
+      els.refitLinesToCurrentViewBtn.addEventListener('click', () => {
+        if (!state.hasImage) {
+          showToast('先に手のひら写真を用意してください', 'ℹ️');
+          return;
+        }
+        state.lastPalmMetrics = analyzePalmCanvasAndDrawOverlay();
+        if (!els.resultSection.classList.contains('hidden')) {
+          renderReadingResults();
+        }
+        showToast('現在の写真位置・拡大率に合わせて4大ラインを再フィットしました！', '🎯');
+      });
+
+      // ラインを標準的な初期形状にリセット
+      els.resetLinesDefaultBtn.addEventListener('click', resetLinesToAnatomicalDefault);
+
+      // 結果カードからステージ編集へスクロール移動
+      if (els.scrollToStageEditorBtn) {
+        els.scrollToStageEditorBtn.addEventListener('click', () => {
+          setInteractionMode('editLines');
+          els.stageContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast('画面上の●ポイントや「✥ 生命線」などのラベルをドラッグして自由に調整できます！', '👆');
+        });
+      }
+
+      // 右手・左手ラジオ変更時にカメラガイドと手相の向きを更新
       document.querySelectorAll('input[name="palmHandSide"]').forEach(radio => {
         radio.addEventListener('change', () => {
+          updateHandSideGuideUI();
+          if (state.hasImage && state.imageSourceType === 'sample') {
+            generateMysticSamplePalm();
+          }
           if (state.hasImage && !els.resultSection.classList.contains('hidden')) {
             state.lastPalmMetrics = analyzePalmCanvasAndDrawOverlay();
             renderReadingResults();
+            showToast(
+              radio.value === 'left'
+                ? '左手モード（親指＝左側）に合わせてラインを再配置しました'
+                : '右手モード（親指＝右側）に合わせてラインを再配置しました',
+              '✋'
+            );
           }
         });
       });
+      updateHandSideGuideUI();
 
       // 実測した手の筋（しわピクセル）表示切替＆感度スライダー
       els.chkShowRawCreases.addEventListener('change', () => {
@@ -2669,11 +3117,32 @@
         }
       });
 
-      // オーバーレイCanvas上の制御点（●）ドラッグ微調整機能
+      // 解析前（palmCanvas単体表示時）でもドラッグで写真位置を動かせるようにする
+      els.palmCanvas.addEventListener('pointerdown', (evt) => {
+        if (!state.hasImage || !els.overlayCanvas.classList.contains('hidden')) return;
+        state.isPanningImage = true;
+        state.panStartClientX = evt.clientX;
+        state.panStartClientY = evt.clientY;
+        state.panStartX = state.imagePanX;
+        state.panStartY = state.imagePanY;
+        els.palmCanvas.setPointerCapture(evt.pointerId);
+        evt.preventDefault();
+      });
+      els.palmCanvas.addEventListener('pointermove', (evt) => {
+        if (!state.isPanningImage) return;
+        const rect = els.palmCanvas.getBoundingClientRect();
+        const scale = els.palmCanvas.width / Math.max(1, rect.width);
+        state.imagePanX = state.panStartX + (evt.clientX - state.panStartClientX) * scale;
+        state.imagePanY = state.panStartY + (evt.clientY - state.panStartClientY) * scale;
+        applyImageZoomAndPan(false);
+      });
+      const endPalmPan = () => { state.isPanningImage = false; };
+      els.palmCanvas.addEventListener('pointerup', endPalmPan);
+      els.palmCanvas.addEventListener('pointercancel', endPalmPan);
+
+      // オーバーレイCanvas上の制御点（●）・ラベルドラッグ微調整 ＆ 写真移動機能
       const getCanvasRelCoords = (evt) => {
         const rect = els.overlayCanvas.getBoundingClientRect();
-        const scaleX = els.overlayCanvas.width / Math.max(1, rect.width);
-        const scaleY = els.overlayCanvas.height / Math.max(1, rect.height);
         // object-contain による余白を考慮
         const imgAspect = els.overlayCanvas.width / Math.max(1, els.overlayCanvas.height);
         const boxAspect = rect.width / Math.max(1, rect.height);
@@ -2688,49 +3157,114 @@
         const rx = (evt.clientX - rect.left - offsetX) / Math.max(1, renderW);
         const ry = (evt.clientY - rect.top - offsetY) / Math.max(1, renderH);
         return {
-          x: Math.max(0.03, Math.min(0.97, rx)),
-          y: Math.max(0.03, Math.min(0.97, ry))
+          x: Math.max(0.02, Math.min(0.98, rx)),
+          y: Math.max(0.02, Math.min(0.98, ry))
         };
       };
 
       els.overlayCanvas.addEventListener('pointerdown', (evt) => {
+        // 写真移動モードの場合は写真をパン移動する
+        if (state.interactionMode === 'panImage') {
+          state.isPanningImage = true;
+          state.panStartClientX = evt.clientX;
+          state.panStartClientY = evt.clientY;
+          state.panStartX = state.imagePanX;
+          state.panStartY = state.imagePanY;
+          els.overlayCanvas.setPointerCapture(evt.pointerId);
+          evt.preventDefault();
+          return;
+        }
+
         if (!state.tracedLines) return;
         const pos = getCanvasRelCoords(evt);
-        let bestDist = 0.055;
+
+        // 1. まず4大ラインの各制御点（●）の近くをタップしたか判定（スマホでも掴みやすい広めの判定半径）
+        let bestDist = 0.068;
         let found = null;
         state.tracedLines.forEach((line, lIdx) => {
           line.pts.forEach((pt, pIdx) => {
             const d = Math.hypot(pt.x - pos.x, pt.y - pos.y);
             if (d < bestDist) {
               bestDist = d;
-              found = { lIdx, pIdx };
+              found = { type: 'point', lIdx, pIdx };
             }
           });
         });
+
+        // 2. 制御点でない場合、ラベルバッジ（✥ 生命線 など）をタップしたか判定（線全体の平行移動）
+        if (!found) {
+          for (let lIdx = state.tracedLines.length - 1; lIdx >= 0; lIdx--) {
+            const b = state.tracedLines[lIdx].badgeBox;
+            if (b && pos.x >= b.x0 - 0.015 && pos.x <= b.x1 + 0.015 && pos.y >= b.y0 - 0.015 && pos.y <= b.y1 + 0.015) {
+              found = {
+                type: 'wholeLine',
+                lIdx,
+                startX: pos.x,
+                startY: pos.y,
+                origPts: state.tracedLines[lIdx].pts.map(p => ({ x: p.x, y: p.y }))
+              };
+              break;
+            }
+          }
+        }
+
+        // 3. さらにラインの曲線自体をタップした場合も、最も近い制御点を掴めるようにする
+        if (!found) {
+          let bestCurveDist = 0.045;
+          state.tracedLines.forEach((line, lIdx) => {
+            for (let i = 0; i < line.pts.length - 1; i++) {
+              const mx = (line.pts[i].x + line.pts[i + 1].x) * 0.5;
+              const my = (line.pts[i].y + line.pts[i + 1].y) * 0.5;
+              const d = Math.hypot(mx - pos.x, my - pos.y);
+              if (d < bestCurveDist) {
+                bestCurveDist = d;
+                found = {
+                  type: 'wholeLine',
+                  lIdx,
+                  startX: pos.x,
+                  startY: pos.y,
+                  origPts: line.pts.map(p => ({ x: p.x, y: p.y }))
+                };
+              }
+            }
+          });
+        }
+
         if (found) {
           state.draggingPoint = found;
           els.overlayCanvas.setPointerCapture(evt.pointerId);
+          renderOverlayAndBuildSnapshot();
           evt.preventDefault();
         }
       });
 
       els.overlayCanvas.addEventListener('pointermove', (evt) => {
+        if (state.isPanningImage) {
+          const rect = els.overlayCanvas.getBoundingClientRect();
+          const scale = els.overlayCanvas.width / Math.max(1, rect.width);
+          state.imagePanX = state.panStartX + (evt.clientX - state.panStartClientX) * scale;
+          state.imagePanY = state.panStartY + (evt.clientY - state.panStartClientY) * scale;
+          applyImageZoomAndPan(true);
+          return;
+        }
+
         if (!state.draggingPoint || !state.tracedLines) return;
         const pos = getCanvasRelCoords(evt);
-        const { lIdx, pIdx } = state.draggingPoint;
-        const pts = state.tracedLines[lIdx].pts;
-        const dx = pos.x - pts[pIdx].x;
-        const dy = pos.y - pts[pIdx].y;
-        pts[pIdx] = { x: pos.x, y: pos.y };
-        // 隣接する中間点も滑らかに追従させる
-        if (pIdx > 0 && pIdx % 2 === 0) {
-          pts[pIdx - 1].x += dx * 0.5;
-          pts[pIdx - 1].y += dy * 0.5;
+
+        if (state.draggingPoint.type === 'point') {
+          const { lIdx, pIdx } = state.draggingPoint;
+          const pts = state.tracedLines[lIdx].pts;
+          pts[pIdx] = { x: pos.x, y: pos.y };
+        } else if (state.draggingPoint.type === 'wholeLine') {
+          const { lIdx, startX, startY, origPts } = state.draggingPoint;
+          const dx = pos.x - startX;
+          const dy = pos.y - startY;
+          state.tracedLines[lIdx].pts = origPts.map(p => ({
+            x: Math.max(0.03, Math.min(0.97, p.x + dx)),
+            y: Math.max(0.03, Math.min(0.97, p.y + dy))
+          }));
         }
-        if (pIdx < pts.length - 1 && pIdx % 2 === 0) {
-          pts[pIdx + 1].x += dx * 0.5;
-          pts[pIdx + 1].y += dy * 0.5;
-        }
+
         if (state.lastPalmMetrics) {
           state.lastPalmMetrics.snapshotDataUrl = renderOverlayAndBuildSnapshot();
           els.resultPalmSnapshot.src = state.lastPalmMetrics.snapshotDataUrl;
@@ -2738,8 +3272,12 @@
       });
 
       const endPointDrag = () => {
+        if (state.isPanningImage) {
+          state.isPanningImage = false;
+        }
         if (state.draggingPoint) {
           state.draggingPoint = null;
+          recalculateScoresFromEditedLines();
         }
       };
       els.overlayCanvas.addEventListener('pointerup', endPointDrag);

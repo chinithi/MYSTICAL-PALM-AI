@@ -203,10 +203,14 @@
         </div>
 
         <!-- カメラ起動中コントロールバー -->
-        <div id="cameraActiveControls" class="hidden flex flex-wrap items-center justify-center gap-3 pt-1">
+        <div id="cameraActiveControls" class="hidden flex flex-wrap items-center justify-center gap-2.5 pt-1">
           <button id="capturePhotoBtn" type="button"
             class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-mystic-950 font-bold text-xs sm:text-sm shadow-lg flex items-center gap-1.5 hover:brightness-110 transition">
             <span>⭕</span><span>この瞬間を撮影する</span>
+          </button>
+          <button id="flipCameraVerticalBtn" type="button"
+            class="px-3.5 py-2.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-100 border border-purple-400/30 text-xs flex items-center gap-1.5 transition">
+            <span>🔃</span><span id="flipCameraVerticalLabel">上下反転 (対面撮影): OFF</span>
           </button>
           <button id="switchCameraBtn" type="button"
             class="px-3.5 py-2.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-100 border border-purple-400/30 text-xs flex items-center gap-1.5 transition">
@@ -242,19 +246,26 @@
           </button>
         </div>
 
-        <!-- 利き手・鑑定対象の手の選択 -->
+        <!-- 利き手・鑑定対象の手の選択 ＆ 撮影後画像の上下反転ボタン -->
         <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-purple-500/20 text-xs">
-          <span class="text-purple-200/80">鑑定する手のひら：</span>
-          <div class="flex gap-2">
-            <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
-              <input type="radio" name="palmHandSide" value="right" checked class="accent-amber-400" />
-              <span>右手（後天運・現在の姿）</span>
-            </label>
-            <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
-              <input type="radio" name="palmHandSide" value="left" class="accent-amber-400" />
-              <span>左手（先天運・潜在意識）</span>
-            </label>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-purple-200/80">鑑定する手：</span>
+            <div class="flex gap-1.5">
+              <label class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
+                <input type="radio" name="palmHandSide" value="right" checked class="accent-amber-400" />
+                <span>右手（現在・未来）</span>
+              </label>
+              <label class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-mystic-900 border border-purple-500/30 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/15 has-[:checked]:text-amber-200">
+                <input type="radio" name="palmHandSide" value="left" class="accent-amber-400" />
+                <span>左手（先天・潜在）</span>
+              </label>
+            </div>
           </div>
+
+          <button id="flipCanvasVerticalBtn" type="button"
+            class="px-3 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-amber-200 border border-amber-400/30 text-xs font-medium flex items-center gap-1 transition">
+            <span>🔃</span><span>画像を上下反転</span>
+          </button>
         </div>
       </section>
 
@@ -1053,6 +1064,7 @@
       imageSourceType: 'none',
       cameraStream: null,
       facingMode: 'environment',
+      cameraFlipVertical: false,
       lastPalmMetrics: null,
       sampleSeedCounter: 1
     };
@@ -1100,6 +1112,9 @@
       palmFileInput: document.getElementById('palmFileInput'),
       startCameraBtn: document.getElementById('startCameraBtn'),
       capturePhotoBtn: document.getElementById('capturePhotoBtn'),
+      flipCameraVerticalBtn: document.getElementById('flipCameraVerticalBtn'),
+      flipCameraVerticalLabel: document.getElementById('flipCameraVerticalLabel'),
+      flipCanvasVerticalBtn: document.getElementById('flipCanvasVerticalBtn'),
       switchCameraBtn: document.getElementById('switchCameraBtn'),
       closeCameraBtn: document.getElementById('closeCameraBtn'),
       generateSamplePalmBtn: document.getElementById('generateSamplePalmBtn'),
@@ -1376,6 +1391,50 @@
       els.cameraActiveControls.classList.add('hidden');
     }
 
+    function updateCameraFlipUI() {
+      if (state.cameraFlipVertical) {
+        els.cameraVideo.style.transform = 'scaleY(-1)';
+        els.flipCameraVerticalLabel.textContent = '上下反転 (対面撮影): ON';
+        els.flipCameraVerticalBtn.className = 'px-3.5 py-2.5 rounded-xl bg-amber-500/25 hover:bg-amber-500/35 text-amber-200 border border-amber-400 text-xs font-bold flex items-center gap-1.5 transition shadow-[0_0_12px_rgba(229,193,88,0.3)]';
+      } else {
+        els.cameraVideo.style.transform = 'none';
+        els.flipCameraVerticalLabel.textContent = '上下反転 (対面撮影): OFF';
+        els.flipCameraVerticalBtn.className = 'px-3.5 py-2.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-100 border border-purple-400/30 text-xs flex items-center gap-1.5 transition';
+      }
+    }
+
+    function flipCurrentCanvasVertically() {
+      if (!state.hasImage) {
+        showToast('先にカメラ撮影または写真をアップロードしてください', 'ℹ️');
+        return;
+      }
+      const canvas = els.palmCanvas;
+      const w = canvas.width;
+      const h = canvas.height;
+      if (!w || !h) return;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = w;
+      tempCanvas.height = h;
+      tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.clearRect(0, 0, w, h);
+      ctx.translate(0, h);
+      ctx.scale(1, -1);
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+
+      if (!els.resultSection.classList.contains('hidden')) {
+        state.lastPalmMetrics = analyzePalmCanvasAndDrawOverlay();
+        renderReadingResults();
+      } else {
+        els.overlayCanvas.classList.add('hidden');
+      }
+      showToast('手のひら画像を上下反転しました！', '🔃');
+    }
+
     async function startCamera() {
       stopCameraStream();
       try {
@@ -1389,6 +1448,7 @@
         });
         state.cameraStream = stream;
         els.cameraVideo.srcObject = stream;
+        updateCameraFlipUI();
         els.emptyStagePlaceholder.classList.add('hidden');
         els.palmCanvas.classList.add('hidden');
         els.overlayCanvas.classList.add('hidden');
@@ -1408,14 +1468,20 @@
       canvas.width = video.videoWidth || 800;
       canvas.height = video.videoHeight || 600;
       const ctx = canvas.getContext('2d');
+      ctx.save();
+      if (state.cameraFlipVertical) {
+        ctx.translate(0, canvas.height);
+        ctx.scale(1, -1);
+      }
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
 
       stopCameraStream();
       state.hasImage = true;
       state.imageSourceType = 'camera';
       els.palmCanvas.classList.remove('hidden');
       els.overlayCanvas.classList.add('hidden');
-      els.imageSourceStatus.textContent = 'カメラ撮影完了';
+      els.imageSourceStatus.textContent = state.cameraFlipVertical ? 'カメラ撮影完了 (上下反転済)' : 'カメラ撮影完了';
       showToast('手のひら写真を撮影しました！', '📸');
     }
 
@@ -2108,6 +2174,17 @@
 
       els.startCameraBtn.addEventListener('click', startCamera);
       els.capturePhotoBtn.addEventListener('click', captureFromCamera);
+      els.flipCameraVerticalBtn.addEventListener('click', () => {
+        state.cameraFlipVertical = !state.cameraFlipVertical;
+        updateCameraFlipUI();
+        showToast(
+          state.cameraFlipVertical
+            ? 'カメラ映像を上下反転しました（対面で相手の手相を撮るのに最適です）'
+            : 'カメラ映像の上下反転を解除しました',
+          '🔃'
+        );
+      });
+      els.flipCanvasVerticalBtn.addEventListener('click', flipCurrentCanvasVertically);
       els.switchCameraBtn.addEventListener('click', () => {
         state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
         startCamera();
